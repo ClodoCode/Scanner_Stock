@@ -7,6 +7,7 @@ def show_dashboard(main_view):
     for widget in main_view.winfo_children():
         widget.destroy()
 
+
     # Couleurs principales
     bg_color = "#F7F8FA"
     text_color = "#333333"
