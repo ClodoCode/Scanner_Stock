@@ -1,0 +1,14 @@
+{
+    "utilisateur123": {
+        "nom": "ARTHUR",
+        "role": "administrateur"
+    },
+    "utilisateur456": {
+        "nom": "SAB",
+        "role": "utilisateur"
+    },
+    "utilisateur789": {
+        "nom": "INVITE",
+        "role": "invite"
+    }
+}
