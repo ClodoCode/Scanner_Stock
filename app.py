@@ -71,9 +71,9 @@ class Application(CTk):
         CTkLabel(master=self.sidebar_frame, text="", image=logo_img).pack(pady=(38, 68), anchor="center")
 
         # Boutons
-        self.dashboard_button = self.create_button(self.sidebar_frame, "Dashboard", "package_icon.png", show_dashboard)
-        self.reduire_button = self.create_button(self.sidebar_frame, "Sortie", "logistics_icon.png", show_sortie)
-        self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "delivered_icon.png", show_entree)
+        self.dashboard_button = self.create_button(self.sidebar_frame, "Dashboard", "package_icon.png", lambda: show_dashboard(self.main_view))
+        self.reduire_button = self.create_button(self.sidebar_frame, "Sortie", "logistics_icon.png", lambda: show_sortie(self.main_view))
+        self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "delivered_icon.png", lambda: show_entree(self.main_view))
 
         # Statut de la connexion
         self.label_sidebar_status = CTkLabel(master=self.sidebar_frame, text="Déconnecté", fg_color="transparent", text_color="red", font=("Arial Bold", 14), anchor="w")
