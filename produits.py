@@ -19,7 +19,9 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+
 def get_produit_info(produit_id):
+
     url = f"{BASE_URL}/{produit_id}"
     response = requests.get(url, headers=HEADERS)
     
@@ -78,7 +80,7 @@ def add_record_to_airtable(produit_id):
         print(f"Erreur {response.status_code} lors de l'ajout à Airtable : {response.text}")
         return None
 
-def add_record_reduire_to_airtable_gestion(produit_id, qte_scan, emplacement):
+def add_record_reduire_to_airtable_gestion(produit_id, qte_scan, emplacement, username):
     """Ajoute un enregistrement dans la table gestion."""
     produit_inf = get_produit_info(produit_id)
     print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : -{qte_scan}")
@@ -89,7 +91,8 @@ def add_record_reduire_to_airtable_gestion(produit_id, qte_scan, emplacement):
             "Action": "Réduire",
             "Référence" : "Scan",
             "Emplacement" : emplacement,
-            "Qté Stock": -qte_scan
+            "Qté Stock": -qte_scan,
+            "Personne": username
         }
     }
 
@@ -102,7 +105,7 @@ def add_record_reduire_to_airtable_gestion(produit_id, qte_scan, emplacement):
         print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
         return False
 
-def reduire_camion_gestion(produit_id, qte_scan, emplacement):
+def reduire_camion_gestion(produit_id, qte_scan, emplacement, username):
     """Ajoute un enregistrement dans la table gestion."""
     produit_inf = get_produit_info(produit_id)
     print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : -{qte_scan}")
@@ -117,6 +120,7 @@ def reduire_camion_gestion(produit_id, qte_scan, emplacement):
             "Emplacement" : emplacement,
             colonne_qte: qte_scan,
             "Déplacer": True,
+            "Personne": username
         }
     }
 
@@ -129,7 +133,7 @@ def reduire_camion_gestion(produit_id, qte_scan, emplacement):
         print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
         return False
 
-def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan):
+def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username):
     """Ajoute un enregistrement dans la table gestion."""
     produit_inf = get_produit_info(produit_id)
     print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : {qte_scan}")
@@ -138,9 +142,10 @@ def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan):
         "fields": {
             "Produits": [produit_id],
             "Action": "Ajouter",
-            "Référence" : "Ajouter_Scan",
+            "Référence" : "Scan",
             "Emplacement" : "STOCK",
-            "Qté Stock": qte_scan
+            "Qté Stock": qte_scan,
+            "Personne": username
         }
     }
 
@@ -162,6 +167,7 @@ client = WebClient(token=slack_token)
 
 # Identifiant du canal ou nom du canal (ex : '#general' ou 'C01ABCD2EFG')
 franck_id = "U0612SGTKQW"
+channel_stock = "G088J6KGFRR"
 
 
 def envoie_msg_franck():
@@ -169,6 +175,16 @@ def envoie_msg_franck():
     try:
         # Envoi du message
         response = client.chat_postMessage(channel=franck_id, text="Une personne vient de scanner un code barre :)")
+        print(f"Message envoyé : {response['message']['text']}")
+
+    except SlackApiError as e:
+        print(f"Erreur lors de l'envoi du message: {e.response['error']}")
+
+def envoie_msg_stock(message):
+
+    try:
+        # Envoi du message
+        response = client.chat_postMessage(channel=channel_stock, text=message)
         print(f"Message envoyé : {response['message']['text']}")
 
     except SlackApiError as e:

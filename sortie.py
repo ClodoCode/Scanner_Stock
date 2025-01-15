@@ -2,7 +2,7 @@ from customtkinter import *
 import tkinter as tk
 from tkinter.font import Font
 from PIL import Image, ImageTk
-from produits import get_produit_info, add_record_reduire_to_airtable_gestion, reduire_camion_gestion
+from produits import get_produit_info, add_record_reduire_to_airtable_gestion, reduire_camion_gestion, envoie_msg_stock
 
 
 def show_sortie(main_view):
@@ -150,7 +150,7 @@ def get_produits_scannes_r():
     return produits_scannes
 
 
-def handle_scan_reduire(produit_id):
+def handle_scan_reduire(produit_id, username):
     global mode_supp, emplacement, produits_scannes
 
     produit_id = str(produit_id)
@@ -179,12 +179,18 @@ def handle_scan_reduire(produit_id):
             if emplacement and produits_scannes:
                 if emplacement == "STOCK":
 
-                    for produit_id, infos in produits_scannes.items():
-                        add_record_reduire_to_airtable_gestion(produit_id, infos["quantite_scannee"], emplacement)
-                else:
-                    for produit_id, infos in produits_scannes.items():
-                        reduire_camion_gestion(produit_id, infos["quantite_scannee"], emplacement)
+                    message = "Produit sortie du Stock : \n\n"
 
+                    for produit_id, infos in produits_scannes.items():
+                        message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
+                        add_record_reduire_to_airtable_gestion(produit_id, infos["quantite_scannee"], emplacement, username)
+                else:
+                    message = f"Produit mis dans {emplacement} : \n\n"
+                    for produit_id, infos in produits_scannes.items():
+                        message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
+                        reduire_camion_gestion(produit_id, infos["quantite_scannee"], emplacement, username)
+
+                envoie_msg_stock(message)
                 produits_scannes.clear()
 
                 for item in tree_reduire.winfo_children():

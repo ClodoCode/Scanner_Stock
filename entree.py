@@ -2,7 +2,7 @@ from customtkinter import *
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter.font import Font
-from produits import get_produit_info, add_record_ajouter_to_airtable_gestion
+from produits import get_produit_info, add_record_ajouter_to_airtable_gestion, envoie_msg_stock
 
 
 def show_entree(main_view):
@@ -139,7 +139,7 @@ def get_produits_scannes_a():
     global produits_scannes
     return produits_scannes
 
-def handle_scan_entree(produit_id):
+def handle_scan_entree(produit_id, username):
     global mode_supp, emplacement, produits_scannes
 
     produit_id = str(produit_id)
@@ -167,8 +167,12 @@ def handle_scan_entree(produit_id):
         if produit_id == "CONFIRM001":
             if produits_scannes:
 
+                message = "Produit entrés en stock :\n\n"
+
                 for produit_id, infos in produits_scannes.items():
-                    add_record_ajouter_to_airtable_gestion(produit_id, infos["quantite_scannee"])
+                    message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
+                    add_record_ajouter_to_airtable_gestion(produit_id, infos["quantite_scannee"], username)
+                envoie_msg_stock(message)
                 produits_scannes.clear()
 
                 for item in tree_ajouter.winfo_children():

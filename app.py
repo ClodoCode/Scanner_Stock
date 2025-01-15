@@ -31,6 +31,9 @@ class Application(CTk):
         # Lier les événements de pression de touche à la fonction
         self.bind("<Key>", self.capture_keypress)
 
+    def get_current_user_name(self):
+        return self.current_user_name
+
     def configure_window(self):
         """Configurer la fenêtre principale de l'application."""
         screen_width = self.winfo_screenwidth()  # Largeur de l'écran
@@ -138,6 +141,7 @@ class Application(CTk):
         """Gère le scan du code-barres et la navigation entre les onglets."""
 
         scanned_code = self.scan_code.strip()
+        username = self.current_user_name
         print(f"Code scanné : {scanned_code}")
 
         if scanned_code == "LOGOUT":
@@ -159,13 +163,13 @@ class Application(CTk):
 
         # Vérification si un onglet est déjà ouvert
         if self.current_tab == "sortie":
-            handle_scan_reduire(scanned_code)
+            handle_scan_reduire(scanned_code, username)
             if len(self.produits_scannes_r) > 0:
                 return
 
         # Vérification si un onglet est déjà ouvert
         if self.current_tab == "entree":
-            handle_scan_entree(scanned_code)
+            handle_scan_entree(scanned_code, username)
             if len(self.produits_scannes_a) > 0:
                 return
 
