@@ -44,7 +44,7 @@ def show_entree(main_view):
     instructions_label.pack(pady=(5, 15))
 
     # Créer un cadre scrollable pour le tableau avec un fond blanc
-    scrollable_frame = CTkScrollableFrame(tab_entree, width=1300, height=300, fg_color="white")
+    scrollable_frame = CTkScrollableFrame(tab_entree, width=1400, height=300, fg_color="white")
     scrollable_frame.pack(padx=15, pady=(0, 10))
 
     # Noms des colonnes
@@ -75,7 +75,7 @@ def show_entree(main_view):
             header_frame,
             text=col,
             width=column_widths[col],
-            font=("Arial", 12, "bold"),
+            font=("Arial", 18, "bold"),
             text_color="#fff",
             fg_color="#2A8C55",
             anchor="center"
@@ -100,28 +100,37 @@ def show_entree(main_view):
                 state="normal",
                 justify="center",
                 fg_color="#f7f7f7",
-                font=("Arial", 12),
+                font=("Arial", 18),
                 border_width=0,
                 text_color="#333",
             )
             entry.insert(0, item)
             entry.pack(side="left")
 
-    global tree_ajouter, label_status, label_status_emplacement
+    global tree_ajouter, label_status, label_status_societe
     tree_ajouter = scrollable_frame
 
     label_status = CTkLabel(
         tab_entree,
         text="",
-        font=("Arial", 12, "italic"),
+        font=("Arial", 18, "italic"),
         text_color="green",
         fg_color="#f7f7f7"
     )
     label_status.pack(pady=(5, 15))
 
+    label_status_societe = CTkLabel(
+        tab_entree,
+        text="Societe : ",
+        font=("Arial", 26, "bold"),
+        text_color="#2525fe",
+        fg_color="#f7f7f7"
+    )
+    label_status_societe.pack(pady=(5, 15))
+
     texte_sous_tableau = CTkLabel(
         tab_entree,
-        text="Conseil : utilisez le code-barres SUPP001 pour annuler un produit scanné par erreur.",
+        text="",
         font=("Arial", 12),
         text_color="#555",
         fg_color="#f7f7f7",
@@ -133,6 +142,7 @@ def show_entree(main_view):
 
 mode_supp = False
 emplacement =""
+societe = ""
 produits_scannes = {}
 
 def get_produits_scannes_a():
@@ -140,7 +150,7 @@ def get_produits_scannes_a():
     return produits_scannes
 
 def handle_scan_entree(produit_id, username):
-    global mode_supp, emplacement, produits_scannes
+    global mode_supp, emplacement, produits_scannes, societe
 
     produit_id = str(produit_id)
 
@@ -165,13 +175,13 @@ def handle_scan_entree(produit_id, username):
             return
 
         if produit_id == "CONFIRM001":
-            if produits_scannes:
+            if produits_scannes and societe:
 
-                message = "Produit entrés en stock :\n\n"
+                message = f"Entrée stock {societe} :\n\n"
 
                 for produit_id, infos in produits_scannes.items():
                     message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
-                    add_record_ajouter_to_airtable_gestion(produit_id, infos["quantite_scannee"], username)
+                    add_record_ajouter_to_airtable_gestion(produit_id, infos["quantite_scannee"], username, societe)
                 envoie_msg_stock(message)
                 produits_scannes.clear()
 
@@ -182,12 +192,12 @@ def handle_scan_entree(produit_id, username):
 
                 label_status.configure(text=f"Tous les produits ont été ajouté au stock.")
             else:
-                label_status.configure(text="Aucun produit à confirmer ou emplacement manquant.")
+                label_status.configure(text="Aucun produit à confirmer ou société manquant.")
             return
 
-        if produit_id in ["STOCK", "FORD", "CLIO", "KANGOO", "MASTER"]:
-            emplacement = produit_id
-            label_status_emplacement.configure(text=f"Emplacement : {emplacement}")
+        if produit_id in ["ISE", "VF", "HSE"]:
+            societe = produit_id
+            label_status_societe.configure(text=f"Societe : {societe}")
             return
 
         if produit_id not in ["RED001", "ACC001", "AJT001"]:
@@ -210,11 +220,11 @@ def handle_scan_entree(produit_id, username):
                     }
                     row_frame = CTkFrame(tree_ajouter, fg_color="#f7f7f7")
                     row_frame.pack(fill="x", pady=0)
-                    CTkLabel(row_frame, width=500, text=produit_info["nom"]).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=produit_info["fournisseur"]).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=produit_info["categorie"]).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=str(produit_info["qte"])).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=1).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=500, text=produit_info["nom"], font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=200, text=produit_info["fournisseur"], font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=200, text=produit_info["categorie"], font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=200, text=str(produit_info["qte"]), font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=200, text=1, font=("Arial", 18)).pack(side="left", anchor="center")
                     label_status.configure(text=f"Produit {produit_info['nom']} ajouté.")
             else:
                 label_status.configure(text=f"Produit {produit_id} non trouvé.", text_color="red")

@@ -12,8 +12,10 @@ API_KEY = os.getenv("api_airtable")
 BASE_ID = "appYkt1t8azfL3VJO"
 TABLE_NAME = "code_barre"
 TABLE_GESTION = "Gestion"
+TABLE_PRODUIT = "Produits"
 BASE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
 BASE_URL_GESTION = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_GESTION}"
+BASE_URL_PRODUIT = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_PRODUIT}"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
@@ -133,7 +135,7 @@ def reduire_camion_gestion(produit_id, qte_scan, emplacement, username):
         print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
         return False
 
-def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username):
+def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username, societe):
     """Ajoute un enregistrement dans la table gestion."""
     produit_inf = get_produit_info(produit_id)
     print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : {qte_scan}")
@@ -145,7 +147,8 @@ def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username):
             "Référence" : "Scan",
             "Emplacement" : "STOCK",
             "Qté Stock": qte_scan,
-            "Personne": username
+            "Personne": username,
+            "Societe": societe
         }
     }
 
@@ -157,6 +160,41 @@ def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username):
     else:
         print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
         return False
+
+
+def list_produit_rea():
+
+    url = f"{BASE_URL_PRODUIT}"
+    params = {"view": "rea"}
+    response = requests.get(url, headers=HEADERS, params=params)
+
+    
+    if response.status_code == 200:
+        data = response.json()
+        records = data.get("records", [])  # Liste des enregistrements
+
+        # Construire une liste des produits
+        produits = []
+        for record in records:
+            fields = record.get("fields", {})  # Récupérer les champs du produit
+
+            produit = {
+                "nom": fields.get("Nom", "Nom inconnu"),
+                "categorie": fields.get("Catégorie", "Catégorie inconnue"),
+                "fournisseur": fields.get("Fournisseur", "Fournisseur inconnu"),
+                "qte": fields.get("Qté Stock (Réel)", "Qte inconnue"),
+            }
+            produits.append(produit)
+
+        return produits
+    else:
+        print(f"Erreur {response.status_code} : {response.text}")
+        return None
+
+
+
+
+# FONCTION POUR SLACK
 
 
 # Ton token d'authentification (récupéré dans Slack)

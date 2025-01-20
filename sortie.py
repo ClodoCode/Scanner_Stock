@@ -44,7 +44,7 @@ def show_sortie(main_view):
     instructions_label.pack(pady=(5, 15))
 
     # Créer un cadre scrollable pour le tableau avec un fond blanc
-    scrollable_frame = CTkScrollableFrame(tab_sortie, width=1300, height=300, fg_color="white")
+    scrollable_frame = CTkScrollableFrame(tab_sortie, width=1400, height=300, fg_color="white")
     scrollable_frame.pack(padx=15, pady=(0, 10))
 
 
@@ -76,7 +76,7 @@ def show_sortie(main_view):
             header_frame,
             text=col,
             width=column_widths[col],
-            font=("Arial", 12, "bold"),
+            font=("Arial", 18, "bold"),
             text_color="#fff",
             fg_color="#2A8C55",
             anchor="center"
@@ -102,7 +102,7 @@ def show_sortie(main_view):
                 state="normal",
                 justify="center",
                 fg_color="#f7f7f7",
-                font=("Arial", 12),
+                font=("Arial", 18),
                 border_width=0,
                 text_color="#333",
             )
@@ -115,7 +115,7 @@ def show_sortie(main_view):
     label_status = CTkLabel(
         tab_sortie,
         text="",
-        font=("Arial", 12, "italic"),
+        font=("Arial", 18, "italic"),
         text_color="green",
         fg_color="#f7f7f7"
     )
@@ -124,15 +124,15 @@ def show_sortie(main_view):
     label_status_emplacement = CTkLabel(
         tab_sortie,
         text="Emplacement : ",
-        font=("Arial", 16, "bold"),
-        text_color="green",
+        font=("Arial", 26, "bold"),
+        text_color="#2525fe",
         fg_color="#f7f7f7"
     )
     label_status_emplacement.pack(pady=(5, 15))
 
     texte_sous_tableau = CTkLabel(
         tab_sortie,
-        text="Conseil : utilisez le code-barres SUPP001 pour annuler un produit scanné par erreur.",
+        text="",
         font=("Arial", 12),
         text_color="#555",
         fg_color="#f7f7f7",
@@ -179,13 +179,13 @@ def handle_scan_reduire(produit_id, username):
             if emplacement and produits_scannes:
                 if emplacement == "STOCK":
 
-                    message = "Produit sortie du Stock : \n\n"
+                    message = "Sortie Stock : \n\n"
 
                     for produit_id, infos in produits_scannes.items():
                         message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
                         add_record_reduire_to_airtable_gestion(produit_id, infos["quantite_scannee"], emplacement, username)
                 else:
-                    message = f"Produit mis dans {emplacement} : \n\n"
+                    message = f"Sortie --> {emplacement} : \n\n"
                     for produit_id, infos in produits_scannes.items():
                         message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
                         reduire_camion_gestion(produit_id, infos["quantite_scannee"], emplacement, username)
@@ -229,11 +229,11 @@ def handle_scan_reduire(produit_id, username):
                     }
                     row_frame = CTkFrame(tree_reduire, fg_color="#f7f7f7")
                     row_frame.pack(fill="x", pady=0)
-                    CTkLabel(row_frame, width=500, text=produit_info["nom"]).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=produit_info["fournisseur"]).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=produit_info["categorie"]).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=str(produit_info["qte"])).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=1).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=500, text=produit_info["nom"], font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=200, text=produit_info["fournisseur"], font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=200, text=produit_info["categorie"], font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=200, text=str(produit_info["qte"]), font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=200, text=1, font=("Arial", 18)).pack(side="left", anchor="center")
                     label_status.configure(text=f"Produit {produit_info['nom']} ajouté.")
             else:
                 label_status.configure(text=f"Produit {produit_id} non trouvé.", text_color="red")

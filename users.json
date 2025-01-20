@@ -1,14 +1,18 @@
 {
     "utilisateur123": {
         "nom": "ARTHUR",
-        "role": "administrateur"
+        "role": "administrateur",
+        "societe": "HSE"
     },
     "utilisateur456": {
         "nom": "SAB",
-        "role": "utilisateur"
+        "role": "utilisateur",
+        "societe": "ISE"
+
     },
     "utilisateur789": {
         "nom": "INVITE",
-        "role": "invite"
+        "role": "invite",
+        "societe": "AUCUNE"
     }
 }
