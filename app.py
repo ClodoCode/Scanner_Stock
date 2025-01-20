@@ -69,14 +69,14 @@ class Application(CTk):
 
     def create_sidebar(self):
         """Créer la barre latérale avec ses éléments."""
-        self.sidebar_frame = CTkFrame(master=self, fg_color="#4b5e61", width=176, height=650, corner_radius=0)
+        self.sidebar_frame = CTkFrame(master=self, fg_color="#4b5e61", width=176, height=self.winfo_screenheight(), corner_radius=0)
         self.sidebar_frame.pack_propagate(0)
         self.sidebar_frame.pack(fill="y", anchor="w", side="left")
 
         # Logo
         logo_img_data = Image.open("logo.png")
         logo_img = CTkImage(dark_image=logo_img_data, light_image=logo_img_data, size=(77.68, 85.42))
-        CTkLabel(master=self.sidebar_frame, text="", image=logo_img).pack(pady=(38, 68), anchor="center")
+        CTkLabel(master=self.sidebar_frame, text="", image=logo_img).pack(pady=(38, 8), anchor="center")
 
         # Section 1 - Menu
         self.menu_section = CTkFrame(self.sidebar_frame, fg_color="transparent", corner_radius=10)
@@ -105,7 +105,7 @@ class Application(CTk):
 
         # Statut de la connexion
         self.label_sidebar_status = CTkLabel(master=self.sidebar_frame, text="Déconnecté", fg_color="transparent", text_color="red", font=("Arial Bold", 16), anchor="w")
-        self.label_sidebar_status.pack(anchor="center", ipady=5, pady=(225, 0))
+        self.label_sidebar_status.pack(anchor="center", ipady=5, pady=(275, 0))
 
         # Label pour afficher le rôle sous le nom de l'utilisateur
         self.label_sidebar_role = CTkLabel(master=self.sidebar_frame, text="", fg_color="transparent", text_color="black", font=("Arial", 16), anchor="w")
@@ -197,6 +197,8 @@ class Application(CTk):
         self.current_user_name = ""
         self.update_sidebar_status()
         self.update_tab_access()
+        self.produits_scannes_r = {}
+        self.produits_scannes_a = {}
 
         if self.current_tab != "dashboard":
             show_dashboard(self.main_view)

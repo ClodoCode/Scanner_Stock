@@ -44,7 +44,7 @@ def show_entree(main_view):
     instructions_label.pack(pady=(5, 15))
 
     # Créer un cadre scrollable pour le tableau avec un fond blanc
-    scrollable_frame = CTkScrollableFrame(tab_entree, width=1400, height=300, fg_color="white")
+    scrollable_frame = CTkScrollableFrame(tab_entree, width=1700, height=700, fg_color="white")
     scrollable_frame.pack(padx=15, pady=(0, 10))
 
     # Noms des colonnes
@@ -64,7 +64,7 @@ def show_entree(main_view):
     column_widths = {
         "Nom": SPECIFIC_COLUMN_WIDTH,
         "Fournisseur": DEFAULT_COLUMN_WIDTH,
-        "Catégorie": DEFAULT_COLUMN_WIDTH,
+        "Catégorie": SPECIFIC_COLUMN_WIDTH,
         "Quantité Stock": DEFAULT_COLUMN_WIDTH,
         "Quantité Scannée": DEFAULT_COLUMN_WIDTH,
     }
@@ -222,7 +222,7 @@ def handle_scan_entree(produit_id, username):
                     row_frame.pack(fill="x", pady=0)
                     CTkLabel(row_frame, width=500, text=produit_info["nom"], font=("Arial", 18)).pack(side="left", anchor="center")
                     CTkLabel(row_frame, width=200, text=produit_info["fournisseur"], font=("Arial", 18)).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=produit_info["categorie"], font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=500, text=produit_info["categorie"], font=("Arial", 18)).pack(side="left", anchor="center")
                     CTkLabel(row_frame, width=200, text=str(produit_info["qte"]), font=("Arial", 18)).pack(side="left", anchor="center")
                     CTkLabel(row_frame, width=200, text=1, font=("Arial", 18)).pack(side="left", anchor="center")
                     label_status.configure(text=f"Produit {produit_info['nom']} ajouté.")

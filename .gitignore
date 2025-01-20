@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 devis.txt
+build/
+app.spec
