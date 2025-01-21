@@ -997,10 +997,6 @@
    'C:\\Python311\\Lib\\site-packages\\requests\\utils.py',
    'PYMODULE'),
   ('runpy', 'C:\\Python311\\Lib\\runpy.py', 'PYMODULE'),
-  ('scan_prod',
-   'C:\\Users\\compta\\Desktop\\Code barre stock\\V16 - Nouveau '
-   'Dashboard\\scan_prod.py',
-   'PYMODULE'),
   ('secrets', 'C:\\Python311\\Lib\\secrets.py', 'PYMODULE'),
   ('selectors', 'C:\\Python311\\Lib\\selectors.py', 'PYMODULE'),
   ('settings',

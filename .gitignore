@@ -3,4 +3,7 @@ __pycache__/
 *.pyc
 devis.txt
 build/
+build/app
 app.spec
+dist/
+app.exe

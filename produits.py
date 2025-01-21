@@ -1,229 +1,67 @@
+from customtkinter import *
 import requests
-import os
-from dotenv import load_dotenv
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
+from tkinter import Canvas
+from PIL import Image, ImageTk
+from fonction import get_produit_info
 
-# Charger les variables du fichier .env
-load_dotenv()
+def show_scan_prod(main_view):
+    """
+    Affiche la vue de scan des produits dans la zone principale.
+    """
+    # Effacer les widgets existants
+    for widget in main_view.winfo_children():
+        widget.destroy()
 
-# Configuration Airtable
-API_KEY = os.getenv("api_airtable")
-BASE_ID = "appYkt1t8azfL3VJO"
-TABLE_NAME = "code_barre"
-TABLE_GESTION = "Gestion"
-TABLE_PRODUIT = "Produits"
-BASE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
-BASE_URL_GESTION = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_GESTION}"
-BASE_URL_PRODUIT = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_PRODUIT}"
-HEADERS = {
-    "Authorization": f"Bearer {API_KEY}",
-    "Content-Type": "application/json"
-}
+    # Titre de la page
+    title_label = CTkLabel(master=main_view, text="Scan des Produits", font=("Arial Bold", 24), text_color="#2A8C55")
+    title_label.pack(pady=(20, 10))
+
+    # Créer un Canvas pour afficher les produits
+    global product_canvas
+    product_canvas = Canvas(main_view, bg="#F5F5F5", highlightthickness=0)
+    product_canvas.pack(fill="both", expand=True, padx=20, pady=20)
+
+    # Ajouter un texte temporaire indiquant d'attendre un scan
+    product_canvas.create_text(250, 150, text="Scannez un produit pour voir les détails.", 
+                                font=("Arial", 16), fill="gray", tags="placeholder")
 
 
-def get_produit_info(produit_id):
+def handle_scan_prod(scanned_code):
+    """
+    Gère le scan du produit et affiche ses détails sur le Canvas.
+    """
+    global product_canvas
 
-    url = f"{BASE_URL}/{produit_id}"
-    response = requests.get(url, headers=HEADERS)
-    
-    if response.status_code == 200:
-        record = response.json()
-        fields = record.get("fields", {})
+    # Nettoyage du code scanné
+    scanned_code = scanned_code.strip()
 
-        # Assurez-vous que les champs existent et sont récupérés correctement
-        nom_produit = fields.get("Nom", "Nom inconnu")
-        categorie_produit = fields.get("Catégorie", "Catégorie inconnue")
-        fournisseur_produit = fields.get("Fournisseur", "Fournisseur inconnu")
-        qte_produit = fields.get("codeb_qte", "Qte inconnu")
-        photo_produit = None
-        if "Photo" in fields:
-            attachments = fields["Photo"]
-            if attachments:
-                # Prendre la première image
-                photo_produit = attachments[0].get("url", "Photo non disponible")
+    # Récupérer les informations du produit via `get_produit_info`
+    product_info = get_produit_info(scanned_code)
 
-        return {
-            "id": produit_id,  # Ajout de l'ID pour le tableau
-            "nom": nom_produit,
-            "categorie": categorie_produit,
-            "fournisseur": fournisseur_produit,
-            "qte": qte_produit,
-            "photo": photo_produit,
-        }
+    # Nettoyer le canvas pour préparer l'affichage des détails
+    product_canvas.delete("all")
+
+    if product_info:
+        # Charger l'image du produit
+        if product_info["photo"]:
+            try:
+                # Charger l'image à partir de l'URL
+                image = Image.open(requests.get(product_info["photo"], stream=True).raw)
+                image = image.resize((150, 150), Image.ANTIALIAS)
+                product_image = ImageTk.PhotoImage(image)
+                product_canvas.image = product_image  # Empêche le garbage collection
+                product_canvas.create_image(250, 100, image=product_image)
+            except Exception as e:
+                print(f"Erreur lors du chargement de l'image : {e}")
+                product_canvas.create_text(250, 100, text="Image non disponible", font=("Arial", 14), fill="gray")
+        else:
+            product_canvas.create_text(250, 100, text="Aucune image disponible", font=("Arial", 14), fill="gray")
+
+        # Afficher les détails du produit
+        product_canvas.create_text(250, 200, text=f"Nom : {product_info['nom']}", font=("Arial Bold", 16), fill="#2A8C55")
+        product_canvas.create_text(250, 240, text=f"Fournisseur : {product_info['fournisseur']}", font=("Arial", 14), fill="black")
+        product_canvas.create_text(250, 280, text=f"Quantité : {product_info['qte']}", font=("Arial", 14), fill="black")
+        product_canvas.create_text(250, 320, text=f"Catégorie : {product_info['categorie']}", font=("Arial", 14), fill="black")
     else:
-        print(f"Erreur {response.status_code} lors de la récupération du produit : {response.text}")
-        return None
-
-def add_record_to_airtable(produit_id):
-    print(f"Tentative d'ajout du produit à Airtable : {produit_id}")
-    produit_info = get_produit_info(produit_id)
-    
-    if not produit_info:
-        print("Erreur : le produit n'a pas été trouvé dans la table `code_barre`.")
-        return None  # Si le produit n'est pas trouvé, ne pas continuer
-    
-    # Préparer les données à envoyer à Airtable
-    data = {
-        "fields": {
-            "Nom": produit_info["nom"],  # Ajoutez le nom du produit
-            "Quantité": 1,  # Par défaut, une quantité de 1
-        }
-    }
-    print(f"Données préparées pour Airtable : {data}")
-    
-    response = requests.post(BASE_URL, headers=HEADERS, json=data)
-
-    if response.status_code == 200:
-        created_record = response.json()
-        print(f"Enregistrement créé avec succès dans Airtable : {created_record['id']}")
-        return created_record['id']
-    else:
-        print(f"Erreur {response.status_code} lors de l'ajout à Airtable : {response.text}")
-        return None
-
-def add_record_reduire_to_airtable_gestion(produit_id, qte_scan, emplacement, username):
-    """Ajoute un enregistrement dans la table gestion."""
-    produit_inf = get_produit_info(produit_id)
-    print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : -{qte_scan}")
-    
-    data = {
-        "fields": {
-            "Produits": [produit_id],
-            "Action": "Réduire",
-            "Référence" : "Scan",
-            "Emplacement" : emplacement,
-            "Qté Stock": -qte_scan,
-            "Personne": username
-        }
-    }
-
-    response = requests.post(BASE_URL_GESTION, headers=HEADERS, json=data)
-
-    if response.status_code == 200:
-        print("Enregistrement créé avec succès dans la table gestion.")
-        return True
-    else:
-        print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
-        return False
-
-def reduire_camion_gestion(produit_id, qte_scan, emplacement, username):
-    """Ajoute un enregistrement dans la table gestion."""
-    produit_inf = get_produit_info(produit_id)
-    print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : -{qte_scan}")
-
-    colonne_qte = f"Qté {emplacement}"
-    
-    data = {
-        "fields": {
-            "Produits": [produit_id],
-            "Action": "Déplacer",
-            "Référence" : "Scan",
-            "Emplacement" : emplacement,
-            colonne_qte: qte_scan,
-            "Déplacer": True,
-            "Personne": username
-        }
-    }
-
-    response = requests.post(BASE_URL_GESTION, headers=HEADERS, json=data)
-
-    if response.status_code == 200:
-        print("Enregistrement créé avec succès dans la table gestion.")
-        return True
-    else:
-        print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
-        return False
-
-def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username, societe):
-    """Ajoute un enregistrement dans la table gestion."""
-    produit_inf = get_produit_info(produit_id)
-    print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : {qte_scan}")
-    
-    data = {
-        "fields": {
-            "Produits": [produit_id],
-            "Action": "Ajouter",
-            "Référence" : "Scan",
-            "Emplacement" : "STOCK",
-            "Qté Stock": qte_scan,
-            "Personne": username,
-            "Societe": societe
-        }
-    }
-
-    response = requests.post(BASE_URL_GESTION, headers=HEADERS, json=data)
-
-    if response.status_code == 200:
-        print("Enregistrement créé avec succès dans la table gestion.")
-        return True
-    else:
-        print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
-        return False
-
-
-def list_produit_rea():
-
-    url = f"{BASE_URL_PRODUIT}"
-    params = {"view": "rea"}
-    response = requests.get(url, headers=HEADERS, params=params)
-
-    
-    if response.status_code == 200:
-        data = response.json()
-        records = data.get("records", [])  # Liste des enregistrements
-
-        # Construire une liste des produits
-        produits = []
-        for record in records:
-            fields = record.get("fields", {})  # Récupérer les champs du produit
-
-            produit = {
-                "nom": fields.get("Nom", "Nom inconnu"),
-                "categorie": fields.get("Catégorie", "Catégorie inconnue"),
-                "fournisseur": fields.get("Fournisseur", "Fournisseur inconnu"),
-                "qte": fields.get("Qté Stock (Réel)", "Qte inconnue"),
-            }
-            produits.append(produit)
-
-        return produits
-    else:
-        print(f"Erreur {response.status_code} : {response.text}")
-        return None
-
-
-
-
-# FONCTION POUR SLACK
-
-
-# Ton token d'authentification (récupéré dans Slack)
-slack_token = os.getenv("slack_bot_token")
-
-# Créer un client Slack
-client = WebClient(token=slack_token)
-
-# Identifiant du canal ou nom du canal (ex : '#general' ou 'C01ABCD2EFG')
-franck_id = "U0612SGTKQW"
-channel_stock = "G088J6KGFRR"
-
-
-def envoie_msg_franck():
-
-    try:
-        # Envoi du message
-        response = client.chat_postMessage(channel=franck_id, text="Une personne vient de scanner un code barre :)")
-        print(f"Message envoyé : {response['message']['text']}")
-
-    except SlackApiError as e:
-        print(f"Erreur lors de l'envoi du message: {e.response['error']}")
-
-def envoie_msg_stock(message):
-
-    try:
-        # Envoi du message
-        response = client.chat_postMessage(channel=channel_stock, text=message)
-        print(f"Message envoyé : {response['message']['text']}")
-
-    except SlackApiError as e:
-        print(f"Erreur lors de l'envoi du message: {e.response['error']}")
+        # Afficher un message d'erreur si le produit est introuvable
+        product_canvas.create_text(250, 150, text="Produit introuvable.", font=("Arial Bold", 16), fill="red")

@@ -7,8 +7,7 @@ from dashboard import show_dashboard
 from sortie import show_sortie, handle_scan_reduire, get_produits_scannes_r
 from entree import show_entree, handle_scan_entree, get_produits_scannes_a
 from fonction import load_users_from_json
-from produits import envoie_msg_franck
-from scan_prod import show_scan_prod
+from produits import show_scan_prod, handle_scan_prod
 from users import show_users
 from settings import show_settings
 
@@ -38,32 +37,27 @@ class Application(CTk):
         # Lier les événements de pression de touche à la fonction
         self.bind("<Key>", self.capture_keypress)
 
+        self.bind("<Configure>", self.on_resize)
+
     def configure_window(self):
         """Configurer la fenêtre principale de l'application."""
-        screen_width = self.winfo_screenwidth()  # Largeur de l'écran
-        screen_height = self.winfo_screenheight()  # Hauteur de l'écran
+        # Configurer la fenêtre pour être redimensionnable
+        self.geometry("1024x768")  # Taille par défaut
+        self.resizable(True, True)  # Autoriser le redimensionnement
+        self.state("zoomed")  # Maximiser la fenêtre au démarrage
 
-        # Calcul de la hauteur disponible (en tenant compte de la barre des tâches)
-        taskbar_offset = 40  # Ajustez en fonction de l'épaisseur de la barre des tâches
-        available_height = screen_height - taskbar_offset
-
-        # Définir la géométrie de la fenêtre
-        self.geometry(f"{screen_width}x{available_height}")
-
-        # Maximiser la fenêtre sans dépasser la barre des tâches
-        self.state("zoomed")
-
-        # Fixer la taille maximale (évite que la fenêtre dépasse les dimensions visibles)
-        self.maxsize(screen_width, available_height)
-
-        # Définir le titre et l'icône de la fenêtre
+        # Définir le titre et l'icône
         self.title("Logiciel Stock")
         self.iconbitmap("logo.ico")
 
-        # Autres configurations
-        self.resizable(True, True)
+        # Définir le mode d'apparence
         set_appearance_mode("light")
         self.configure(bg="#2A8C55")
+
+    def on_resize(self, event):
+        """Ajuster les éléments internes en fonction de la taille de la fenêtre."""
+        # Ajuster la barre latérale pour qu'elle remplisse la hauteur
+        self.sidebar_frame.configure(height=event.height)
 
 
 
@@ -103,14 +97,20 @@ class Application(CTk):
         self.produit_button = self.create_button(self.sidebar_frame, "Produits", "parcel.png", lambda: show_scan_prod(self.main_view))
         self.settings_button = self.create_button(self.sidebar_frame, "Settings", "gear.png", lambda: show_settings(self.main_view))
 
+        # Conteneur pour les éléments de statut et déconnexion
+        self.footer_frame = CTkFrame(master=self.sidebar_frame, fg_color="transparent")
+        self.footer_frame.pack(side="bottom", fill="x", pady=10)  # Toujours en bas, avec un peu de marge
+
         # Statut de la connexion
-        self.label_sidebar_status = CTkLabel(master=self.sidebar_frame, text="Déconnecté", fg_color="transparent", text_color="red", font=("Arial Bold", 16), anchor="w")
-        self.label_sidebar_status.pack(anchor="center", ipady=5, pady=(275, 0))
+        self.label_sidebar_status = CTkLabel(master=self.footer_frame,text="Déconnecté", fg_color="transparent", text_color="red", font=("Arial Bold", 16), anchor="w",)
+        self.label_sidebar_status.pack(anchor="center", ipady=5, pady=(0, 5))
 
         # Label pour afficher le rôle sous le nom de l'utilisateur
-        self.label_sidebar_role = CTkLabel(master=self.sidebar_frame, text="", fg_color="transparent", text_color="black", font=("Arial", 16), anchor="w")
-        self.label_sidebar_role.pack(anchor="center", ipady=5, pady=(0, 10))  # Espacement sous le nom de l'utilisateur
-        self.logout_button = self.create_button(self.sidebar_frame, "Déconnexion", "shutdown.png", lambda: self.logout())
+        self.label_sidebar_role = CTkLabel(master=self.footer_frame,text="", fg_color="transparent", text_color="black", font=("Arial", 16), anchor="w",)
+        self.label_sidebar_role.pack(anchor="center", ipady=5, pady=(0, 10))  # Espacement sous le nom
+
+        # Bouton de déconnexion
+        self.logout_button = self.create_button(self.footer_frame, "Déconnexion", "shutdown.png", lambda: self.logout())
         
 
     def create_button(self, parent, text, img_path, command):
@@ -241,6 +241,10 @@ class Application(CTk):
             if len(self.produits_scannes_a) > 0:
                 return
 
+        if self.current_tab == "scan_prod":
+            handle_scan_prod(scanned_code)
+
+
 
         # Vérification de l'onglet actuel
         if scanned_code == "ACC001":
@@ -252,6 +256,9 @@ class Application(CTk):
         elif scanned_code == "AJT001":
             self.current_tab = "entree"
             show_entree(self.main_view)
+        elif scanned_code == "SCANPROD":
+            self.current_tab = "scan_prod"
+            show_scan_prod(self.main_view)
 
     def capture_keypress(self, event):
         """Capture les frappes clavier et gère les codes-barres."""

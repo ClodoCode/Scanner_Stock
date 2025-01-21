@@ -2,7 +2,7 @@ from customtkinter import *
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkinter.font import Font
-from produits import get_produit_info, add_record_ajouter_to_airtable_gestion, envoie_msg_stock
+from fonction import get_produit_info, add_record_ajouter_to_airtable_gestion, envoie_msg_stock
 
 
 def show_entree(main_view):
@@ -44,11 +44,11 @@ def show_entree(main_view):
     instructions_label.pack(pady=(5, 15))
 
     # Créer un cadre scrollable pour le tableau avec un fond blanc
-    scrollable_frame = CTkScrollableFrame(tab_entree, width=1700, height=700, fg_color="white")
+    scrollable_frame = CTkScrollableFrame(tab_entree, width=1400, height=500, fg_color="white")
     scrollable_frame.pack(padx=15, pady=(0, 10))
 
     # Noms des colonnes
-    columns = ["Nom", "Fournisseur", "Catégorie", "Quantité Stock", "Quantité Scannée"]
+    columns = ["Nom", "Fournisseur", "Quantité Stock", "Quantité Scannée"]
 
     # Définir une police pour mesurer les dimensions du texte
     header_font = Font(family="Arial", size=12, weight="bold")
@@ -64,8 +64,7 @@ def show_entree(main_view):
     column_widths = {
         "Nom": SPECIFIC_COLUMN_WIDTH,
         "Fournisseur": DEFAULT_COLUMN_WIDTH,
-        "Catégorie": SPECIFIC_COLUMN_WIDTH,
-        "Quantité Stock": DEFAULT_COLUMN_WIDTH,
+        "Quantité Stock": SPECIFIC_COLUMN_WIDTH,
         "Quantité Scannée": DEFAULT_COLUMN_WIDTH,
     }
 
@@ -207,14 +206,13 @@ def handle_scan_entree(produit_id, username):
                     produits_scannes[produit_id]["quantite_scannee"] += 1
                     for row in tree_ajouter.winfo_children():
                         if row.winfo_children()[0].cget("text") == produit_info["nom"]:
-                            row.winfo_children()[4].configure(text=produits_scannes[produit_id]["quantite_scannee"])
+                            row.winfo_children()[3].configure(text=produits_scannes[produit_id]["quantite_scannee"])
                             break
                     label_status.configure(text=f"Quantité scannée mise à jour pour {produit_info['nom']}.")
                 else:
                     produits_scannes[produit_id] = {
                         "nom": produit_info["nom"],
                         "fournisseur": produit_info["fournisseur"],
-                        "categorie": produit_info["categorie"],
                         "quantite_stock": produit_info["qte"],
                         "quantite_scannee": 1
                     }
@@ -222,8 +220,7 @@ def handle_scan_entree(produit_id, username):
                     row_frame.pack(fill="x", pady=0)
                     CTkLabel(row_frame, width=500, text=produit_info["nom"], font=("Arial", 18)).pack(side="left", anchor="center")
                     CTkLabel(row_frame, width=200, text=produit_info["fournisseur"], font=("Arial", 18)).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=500, text=produit_info["categorie"], font=("Arial", 18)).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=str(produit_info["qte"]), font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=500, text=str(produit_info["qte"]), font=("Arial", 18)).pack(side="left", anchor="center")
                     CTkLabel(row_frame, width=200, text=1, font=("Arial", 18)).pack(side="left", anchor="center")
                     label_status.configure(text=f"Produit {produit_info['nom']} ajouté.")
             else:

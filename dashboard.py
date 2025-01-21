@@ -1,6 +1,6 @@
 from customtkinter import *
 from tkinter import Canvas
-from produits import list_produit_rea
+from fonction import list_produit_rea
 
 def show_dashboard(main_view):
     """Affiche un tableau de bord moderne avec structure ajustée et design enrichi."""
