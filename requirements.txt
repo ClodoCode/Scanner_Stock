@@ -1,0 +1,18 @@
+Flask==2.3.2
+Flask-SQLAlchemy==3.0.5
+Flask-Login==0.6.2
+Flask-WTF==1.1.1
+WTForms==3.0.1
+python-barcode==0.14.0
+Pillow==9.5.0
+
+# Pour l'analyse et la gestion des données
+pandas==2.1.1
+numpy==1.26.0
+
+# Pour le scanner ou la gestion des codes-barres
+pyzbar==0.1.9
+opencv-python==4.8.0
+
+# Autres outils utiles
+requests==2.31.0
