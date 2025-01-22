@@ -199,7 +199,7 @@ def handle_scan_entree(produit_id, username):
             label_status_societe.configure(text=f"Societe : {societe}")
             return
 
-        if produit_id not in ["RED001", "ACC001", "AJT001"]:
+        if produit_id not in ["RED001", "ACC001", "AJT001", "SCANPROD"]:
             produit_info = get_produit_info(produit_id)
             if produit_info:
                 if produit_id in produits_scannes:

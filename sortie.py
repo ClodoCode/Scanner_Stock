@@ -202,7 +202,7 @@ def handle_scan_reduire(produit_id, username):
             label_status_emplacement.configure(text=f"Emplacement : {emplacement}")
             return
 
-        if produit_id not in ["RED001", "ACC001", "AJT001"]:
+        if produit_id not in ["RED001", "ACC001", "AJT001", "SCANPROD"]:
             produit_info = get_produit_info(produit_id)
             if produit_info:
                 if produit_id in produits_scannes:
