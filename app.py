@@ -7,7 +7,7 @@ from dashboard import show_dashboard
 from sortie import show_sortie, handle_scan_reduire, get_produits_scannes_r
 from entree import show_entree, handle_scan_entree, get_produits_scannes_a
 from fonction import load_users_from_json
-from produits import show_scan_prod, handle_scan_prod
+from produits import show_all_products
 from users import show_users
 from settings import show_settings
 
@@ -92,9 +92,11 @@ class Application(CTk):
         category_label = CTkLabel(master=self.category_section, text="Catégorie", font=("Arial", 16, "bold"), text_color="white", anchor="center")
         category_label.pack(pady=(5, 5))
 
+        username = self.current_user_name
+
         self.reduire_button = self.create_button(self.sidebar_frame, "Sortie", "logistics_icon.png", lambda: show_sortie(self.main_view))
         self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "delivered_icon.png", lambda: show_entree(self.main_view))
-        self.produit_button = self.create_button(self.sidebar_frame, "Produits", "parcel.png", lambda: show_scan_prod(self.main_view))
+        self.produit_button = self.create_button(self.sidebar_frame, "Produits", "parcel.png", lambda: show_all_products(self.main_view, username))
         self.settings_button = self.create_button(self.sidebar_frame, "Settings", "gear.png", lambda: show_settings(self.main_view))
 
         # Conteneur pour les éléments de statut et déconnexion
@@ -145,7 +147,6 @@ class Application(CTk):
             self.users_button.configure(state="disabled")
             self.reduire_button.configure(state="disabled")
             self.ajouter_button.configure(state="disabled")
-            self.produit_button.configure(state="disabled")
             self.settings_button.configure(state="disabled")
         else:
             user_role = self.authorized_users[self.user_identified]["role"]
@@ -215,6 +216,7 @@ class Application(CTk):
         self.reset_inactivity_timer()
         username = self.current_user_name
         print(f"Code scanné : {scanned_code}")
+        print(f"Tab actuelle = {self.current_tab}")
 
         if scanned_code == "LOGOUT":
             self.logout()
@@ -258,7 +260,13 @@ class Application(CTk):
             show_entree(self.main_view)
         elif scanned_code == "SCANPROD":
             self.current_tab = "scan_prod"
-            show_scan_prod(self.main_view)
+            show_all_products(self.main_view, username)
+        elif scanned_code == "USERS":
+            self.current_tab = "users"
+            show_users(self.main_view)
+        elif scanned_code == "SETTINGS":
+            self.current_tab = "settings"
+            show_settings(self.main_view)
 
     def capture_keypress(self, event):
         """Capture les frappes clavier et gère les codes-barres."""

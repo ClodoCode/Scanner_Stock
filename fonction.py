@@ -163,6 +163,57 @@ def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username, socie
         return False
 
 
+def plus_list_prod(produit_id, username):
+    """Ajoute un enregistrement dans la table gestion."""
+    produit_inf = get_produit_info(produit_id)
+    print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : 1")
+    
+    data = {
+        "fields": {
+            "Produits": [produit_id],
+            "Action": "Ajouter",
+            "Référence" : "Ajout Rapide",
+            "Emplacement" : "STOCK",
+            "Qté Stock": 1,
+            "Personne": username,
+        }
+    }
+
+    response = requests.post(BASE_URL_GESTION, headers=HEADERS, json=data)
+
+    if response.status_code == 200:
+        print("Enregistrement créé avec succès dans la table gestion.")
+        return True
+    else:
+        print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
+        return False
+
+
+def moins_list_prod(produit_id, username):
+    """Ajoute un enregistrement dans la table gestion."""
+    produit_inf = get_produit_info(produit_id)
+    print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : 1")
+    
+    data = {
+        "fields": {
+            "Produits": [produit_id],
+            "Action": "Réduire",
+            "Référence" : "Sortie Rapide",
+            "Emplacement" : "STOCK",
+            "Qté Stock": -1,
+            "Personne": username,
+        }
+    }
+
+    response = requests.post(BASE_URL_GESTION, headers=HEADERS, json=data)
+
+    if response.status_code == 200:
+        print("Enregistrement créé avec succès dans la table gestion.")
+        return True
+    else:
+        print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
+        return False
+
 def list_produit_rea():
 
     url = f"{BASE_URL_PRODUIT}"
@@ -192,6 +243,36 @@ def list_produit_rea():
         print(f"Erreur {response.status_code} : {response.text}")
         return None
 
+
+def list_produit():
+
+    url = f"{BASE_URL_PRODUIT}"
+    params = {"view": "Favoris"}
+    response = requests.get(url, headers=HEADERS, params=params)
+
+    
+    if response.status_code == 200:
+        data = response.json()
+        records = data.get("records", [])  # Liste des enregistrements
+
+        # Construire une liste des produits
+        produits = []
+        for record in records:
+            fields = record.get("fields", {})  # Récupérer les champs du produit
+
+            produit = {
+                "nom": fields.get("Nom", "Nom inconnu"),
+                "categorie": fields.get("Catégorie", "Catégorie inconnue"),
+                "fournisseur": fields.get("Fournisseur", "Fournisseur inconnu"),
+                "qte": fields.get("Qté Stock (Réel)", "Qte inconnue"),
+                "id": fields.get("TheId", "ID inconnue"),
+            }
+            produits.append(produit)
+
+        return produits
+    else:
+        print(f"Erreur {response.status_code} : {response.text}")
+        return None
 
 
 
