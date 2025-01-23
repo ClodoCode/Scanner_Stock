@@ -340,6 +340,10 @@
   ('code', 'C:\\Python311\\Lib\\code.py', 'PYMODULE'),
   ('codeop', 'C:\\Python311\\Lib\\codeop.py', 'PYMODULE'),
   ('colorsys', 'C:\\Python311\\Lib\\colorsys.py', 'PYMODULE'),
+  ('commande',
+   'C:\\Users\\compta\\Desktop\\Code barre stock\\V16 - Nouveau '
+   'Dashboard\\commande.py',
+   'PYMODULE'),
   ('concurrent', 'C:\\Python311\\Lib\\concurrent\\__init__.py', 'PYMODULE'),
   ('concurrent.futures',
    'C:\\Python311\\Lib\\concurrent\\futures\\__init__.py',

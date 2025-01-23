@@ -14,9 +14,11 @@ BASE_ID = "appYkt1t8azfL3VJO"
 TABLE_NAME = "code_barre"
 TABLE_GESTION = "Gestion"
 TABLE_PRODUIT = "Produits"
+TABLE_COMMAND = "Commandes"
 BASE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
 BASE_URL_GESTION = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_GESTION}"
 BASE_URL_PRODUIT = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_PRODUIT}"
+BASE_URL_COMMAND = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_COMMAND}"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
@@ -188,7 +190,6 @@ def plus_list_prod(produit_id, username):
         print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
         return False
 
-
 def moins_list_prod(produit_id, username):
     """Ajoute un enregistrement dans la table gestion."""
     produit_inf = get_produit_info(produit_id)
@@ -266,6 +267,8 @@ def list_produit():
                 "fournisseur": fields.get("Fournisseur", "Fournisseur inconnu"),
                 "qte": fields.get("Qté Stock (Réel)", "Qte inconnue"),
                 "id": fields.get("TheId", "ID inconnue"),
+                "mini": fields.get("Minimum", "Pas de minimum"),
+                "max": fields.get("Maximum", "Pas de maximum")
             }
             produits.append(produit)
 
@@ -274,6 +277,59 @@ def list_produit():
         print(f"Erreur {response.status_code} : {response.text}")
         return None
 
+def list_command():
+
+    url = f"{BASE_URL_COMMAND}"
+    params = {"view": "Command scan"}
+    response = requests.get(url, headers=HEADERS, params=params)
+
+    
+    if response.status_code == 200:
+        data = response.json()
+        records = data.get("records", [])  # Liste des enregistrements
+
+        # Construire une liste des produits
+        commands = []
+        for record in records:
+            fields = record.get("fields", {})  # Récupérer les champs du produit
+
+            command = {
+                "Num cde": fields.get("Nom cde", "Nom inconnu"),
+                "Produits": fields.get("Produits", "Produits inconnue"),
+                "ref": fields.get("Référence", "Référence inconnu"),
+                "qte_command": fields.get("Qte Cde", "Qte Cde inconnue"),
+                "qte_recu": fields.get("Qté reçus", "Qté reçus inconnue"),
+            }
+            commands.append(command)
+
+        return command
+    else:
+        print(f"Erreur {response.status_code} : {response.text}")
+        return None
+
+def crea_command(produit_id, qte_cde, username):
+    """Ajoute un enregistrement dans la table gestion."""
+    produit_inf = get_produit_info(produit_id)
+    print(f"Création commande pour : {produit_inf['nom']}, Quantité : {qte_cde}")
+    
+    data = {
+        "fields": {
+            "Produits": [produit_id],
+            "Référence" : "Cde Rapide",
+            "Status" : "Incomplète",
+            "Qte Cde":qte_cde,
+            "Personne": username,
+        }
+    }
+
+    response = requests.post(BASE_URL_COMMAND, headers=HEADERS, json=data)
+
+    if response.status_code == 200:
+        print("Enregistrement créé avec succès dans la table commande.")
+        return True
+    else:
+        print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
+        return False
 
 
 # FONCTION POUR SLACK
@@ -288,6 +344,7 @@ client = WebClient(token=slack_token)
 # Identifiant du canal ou nom du canal (ex : '#general' ou 'C01ABCD2EFG')
 franck_id = "U0612SGTKQW"
 channel_stock = "G088J6KGFRR"
+channel_cde = "C08AMGL9ZAL"
 
 
 def envoie_msg_franck():
@@ -305,6 +362,16 @@ def envoie_msg_stock(message):
     try:
         # Envoi du message
         response = client.chat_postMessage(channel=channel_stock, text=message)
+        print(f"Message envoyé : {response['message']['text']}")
+
+    except SlackApiError as e:
+        print(f"Erreur lors de l'envoi du message: {e.response['error']}")
+
+def envoie_msg_command(message):
+
+    try:
+        # Envoi du message
+        response = client.chat_postMessage(channel=channel_cde, text=message)
         print(f"Message envoyé : {response['message']['text']}")
 
     except SlackApiError as e:

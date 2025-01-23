@@ -8,6 +8,7 @@ from sortie import show_sortie, handle_scan_reduire, get_produits_scannes_r
 from entree import show_entree, handle_scan_entree, get_produits_scannes_a
 from fonction import load_users_from_json
 from produits import show_all_products
+from commande import show_commande
 from users import show_users
 from settings import show_settings
 
@@ -97,6 +98,7 @@ class Application(CTk):
         self.reduire_button = self.create_button(self.sidebar_frame, "Sortie", "logistics_icon.png", lambda: show_sortie(self.main_view))
         self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "delivered_icon.png", lambda: show_entree(self.main_view))
         self.produit_button = self.create_button(self.sidebar_frame, "Produits", "parcel.png", lambda: show_all_products(self.main_view, username))
+        self.commande_button = self.create_button(self.sidebar_frame, "Commande", "tracking.png", lambda: show_commande(self.main_view))
         self.settings_button = self.create_button(self.sidebar_frame, "Settings", "gear.png", lambda: show_settings(self.main_view))
 
         # Conteneur pour les éléments de statut et déconnexion
@@ -261,6 +263,9 @@ class Application(CTk):
         elif scanned_code == "SCANPROD":
             self.current_tab = "scan_prod"
             show_all_products(self.main_view, username)
+        elif scanned_code == "COMMAND":
+            self.current_tab = "commande"
+            show_users(self.main_view)
         elif scanned_code == "USERS":
             self.current_tab = "users"
             show_users(self.main_view)

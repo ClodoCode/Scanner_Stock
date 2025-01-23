@@ -1,7 +1,7 @@
 from tkinter import *
 from customtkinter import *
 from functools import partial  # Pour utiliser partial
-from fonction import list_produit, plus_list_prod, moins_list_prod
+from fonction import list_produit, plus_list_prod, moins_list_prod, crea_command, envoie_msg_command
 
 # Couleurs modernes
 BG_COLOR = "#4b5e61"
@@ -9,11 +9,12 @@ HEADER_BG = "#2A8C55"
 TEXT_COLOR = "#333333"
 HIGHLIGHT_COLOR = "#2A8C55"
 
+
 # Dictionnaires pour suivre les produits scannés et leurs images
 scanned_products = {}
 
 def show_all_products(main_view, username):
-    global table_frame, username_la, filter_supplier, filter_category
+    global table_frame, username_la, filter_supplier, filter_category, list_rea
 
     username_la = username
 
@@ -23,9 +24,21 @@ def show_all_products(main_view, username):
 
     # Récupérer la liste des produits
     produits = list_produit()
+
     scanned_products.clear()
     for p in produits:
         scanned_products[p["id"]] = p
+
+    list_rea = []
+    for p in produits:
+        try:
+            qte = int(p["qte"])
+            mini = int(p["mini"])
+            if qte <= mini:
+                list_rea.append(p)
+        except ValueError:
+            # Si la conversion échoue, tu peux ignorer l'élément ou traiter l'erreur
+            print(f"Erreur de conversion pour le produit : {p}")
 
     # Barre de recherche
     search_frame = CTkFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
@@ -38,6 +51,9 @@ def show_all_products(main_view, username):
     search_button = CTkButton(search_frame, text="Rechercher", command=lambda: search_product(search_entry.get(), table_frame))
     search_button.pack(side="left", padx=10)
 
+    search_button = CTkButton(search_frame, text="Produits à commander", command=lambda: afficher_rea(list_rea, table_frame, username_la))
+    search_button.pack(side="left", padx=10)
+
     # Bloc d'informations générales
     info_frame = CTkFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
     info_frame.pack(fill="x", padx=20, pady=10)
@@ -47,7 +63,7 @@ def show_all_products(main_view, username):
         ("Total Produits", len(produits) if produits else 0),
         ("Nombre Fournisseurs", len(set(p["fournisseur"] for p in produits))),
         ("Catégories", len(set(p["categorie"] for p in produits))),
-        ("Stock Minimum", 20),
+        ("Produits à commander", len(list_rea)),
         ("Articles en Rupture", sum(1 for p in produits if p["qte"] == 0))
     ]
 
@@ -174,19 +190,37 @@ def update_product_table(products, table_frame, username):
             widget.destroy()
 
     for row, product in enumerate(products, start=1):
-        CTkLabel(
-            table_frame, text=product["nom"], font=("Arial", 16), text_color=TEXT_COLOR
-        ).grid(row=row, column=0, padx=5, pady=5, sticky="nsew")
-        CTkLabel(
-            table_frame, text=product["fournisseur"], font=("Arial", 16), text_color=TEXT_COLOR
-        ).grid(row=row, column=1, padx=5, pady=5, sticky="nsew")
-        CTkLabel(
-            table_frame, text=product["categorie"], font=("Arial", 16), text_color=TEXT_COLOR
-        ).grid(row=row, column=2, padx=5, pady=5, sticky="nsew")
-        quantity_label = CTkLabel(
-            table_frame, text=str(product["qte"]), font=("Arial", 16), text_color=TEXT_COLOR
-        )
-        quantity_label.grid(row=row, column=3, padx=5, pady=5, sticky="nsew")
+        if product in list_rea:
+
+            CTkLabel(
+                table_frame, text=product["nom"], font=("Arial", 16), text_color="red"
+            ).grid(row=row, column=0, padx=5, pady=5, sticky="nsew")
+            CTkLabel(
+                table_frame, text=product["fournisseur"], font=("Arial", 16), text_color="red"
+            ).grid(row=row, column=1, padx=5, pady=5, sticky="nsew")
+            CTkLabel(
+                table_frame, text=product["categorie"], font=("Arial", 16), text_color="red"
+            ).grid(row=row, column=2, padx=5, pady=5, sticky="nsew")
+            quantity_label = CTkLabel(
+                table_frame, text=str(product["qte"]), font=("Arial", 16), text_color="red"
+            )
+            quantity_label.grid(row=row, column=3, padx=5, pady=5, sticky="nsew")
+        else:
+
+            CTkLabel(
+                table_frame, text=product["nom"], font=("Arial", 16), text_color=TEXT_COLOR
+            ).grid(row=row, column=0, padx=5, pady=5, sticky="nsew")
+            CTkLabel(
+                table_frame, text=product["fournisseur"], font=("Arial", 16), text_color=TEXT_COLOR
+            ).grid(row=row, column=1, padx=5, pady=5, sticky="nsew")
+            CTkLabel(
+                table_frame, text=product["categorie"], font=("Arial", 16), text_color=TEXT_COLOR
+            ).grid(row=row, column=2, padx=5, pady=5, sticky="nsew")
+            quantity_label = CTkLabel(
+                table_frame, text=str(product["qte"]), font=("Arial", 16), text_color=TEXT_COLOR
+            )
+            quantity_label.grid(row=row, column=3, padx=5, pady=5, sticky="nsew")
+
 
         product["quantity_label"] = quantity_label
 
@@ -198,6 +232,34 @@ def update_product_table(products, table_frame, username):
         CTkButton(
             action_frame, text="-", width=30, command=partial(decrement_quantity, product, username)
         ).pack(side="right", padx=5)
+
+def afficher_rea(products, table_frame, username):
+    """Met à jour uniquement les lignes des produits dans la table."""
+    for widget in table_frame.winfo_children():
+        if getattr(widget, "tag", None) != "header":
+            widget.destroy()
+
+    for row, product in enumerate(products, start=1):
+
+        CTkLabel(
+            table_frame, text=product["nom"], font=("Arial", 16), text_color="red"
+        ).grid(row=row, column=0, padx=5, pady=5, sticky="nsew")
+        CTkLabel(
+            table_frame, text=product["fournisseur"], font=("Arial", 16), text_color="red"
+        ).grid(row=row, column=1, padx=5, pady=5, sticky="nsew")
+        CTkLabel(
+            table_frame, text=product["categorie"], font=("Arial", 16), text_color="red"
+        ).grid(row=row, column=2, padx=5, pady=5, sticky="nsew")
+        quantity_label = CTkLabel(
+            table_frame, text=str(product["qte"]), font=("Arial", 16), text_color="red"
+        )
+        quantity_label.grid(row=row, column=3, padx=5, pady=5, sticky="nsew")
+
+        product["quantity_label"] = quantity_label
+
+        action_frame = CTkFrame(table_frame, fg_color="transparent")
+        action_frame.grid(row=row, column=4, padx=5, pady=5, sticky="nsew")
+        CTkButton(action_frame, text="Commander", width=60, command=partial(command, product, username)).pack(side="left", padx=5)
 
 
 def increment_quantity(product, username):
@@ -215,3 +277,11 @@ def decrement_quantity(product, username):
         if success:
             product["qte"] -= 1
             product["quantity_label"].configure(text=str(product["qte"]))
+
+def command(product, username):
+
+    qte = product["max"] - product["qte"]
+    message = f"Produit à commander : \n\n - {product['nom']} : {qte} unités\n"
+
+    crea_command(product["id"], qte, username)
+    envoie_msg_command(message)
