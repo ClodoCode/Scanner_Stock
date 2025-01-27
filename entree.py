@@ -141,7 +141,6 @@ def show_entree(main_view):
 
 mode_supp = False
 emplacement =""
-societe = ""
 produits_scannes = {}
 
 def get_produits_scannes_a():
@@ -176,11 +175,11 @@ def handle_scan_entree(produit_id, username):
         if produit_id == "CONFIRM001":
             if produits_scannes and societe:
 
-                message = f"Entrée stock {societe} :\n\n"
+                message = f"Entrée stock :\n\n"
 
                 for produit_id, infos in produits_scannes.items():
                     message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
-                    add_record_ajouter_to_airtable_gestion(produit_id, infos["quantite_scannee"], username, societe)
+                    add_record_ajouter_to_airtable_gestion(produit_id, infos["quantite_scannee"], username)
                 envoie_msg_stock(message)
                 produits_scannes.clear()
 
@@ -192,11 +191,6 @@ def handle_scan_entree(produit_id, username):
                 label_status.configure(text=f"Tous les produits ont été ajouté au stock.")
             else:
                 label_status.configure(text="Aucun produit à confirmer ou société manquant.")
-            return
-
-        if produit_id in ["ISE", "VF", "HSE"]:
-            societe = produit_id
-            label_status_societe.configure(text=f"Societe : {societe}")
             return
 
         if produit_id not in ["RED001", "ACC001", "AJT001", "SCANPROD"]:
