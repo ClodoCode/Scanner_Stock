@@ -7,7 +7,7 @@ from dashboard import show_dashboard
 from sortie import show_sortie, handle_scan_reduire, get_produits_scannes_r
 from entree import show_entree, handle_scan_entree, get_produits_scannes_a
 from fonction import load_users_from_json
-from produits_v2 import show_all_products
+from produits import show_all_products
 from commande import show_commande
 from users import show_users
 from settings import show_settings
@@ -149,6 +149,7 @@ class Application(CTk):
             self.users_button.configure(state="disabled")
             self.reduire_button.configure(state="disabled")
             self.ajouter_button.configure(state="disabled")
+            self.produit_button.configure(state="disabled")
             self.settings_button.configure(state="disabled")
         else:
             user_role = self.authorized_users[self.user_identified]["role"]

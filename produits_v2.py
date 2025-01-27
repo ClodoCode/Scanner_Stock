@@ -82,7 +82,7 @@ def show_all_products(main_view, username):
     
     # Initialisation du cadre de pagination
     pagination_frame = CTkFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
-    pagination_frame.pack(fill="x", pady=10)
+    pagination_frame.pack(fill="x", padx=20, pady=10)
     
     update_product_table()  # Mise à jour initiale des produits
 
@@ -103,13 +103,16 @@ def style_treeview():
     # Style des en-têtes
     style.configure(
         "Treeview.Heading",
-        background="#2A8C55",  # Couleur de fond des en-têtes
-        foreground="black",  # Couleur du texte des en-têtes
-        font=("Arial Bold", 13),  # Police des en-têtes
+        background="#ff0000",  # Fond rouge pour les en-têtes
+        foreground="black",     # Texte noir pour les en-têtes
+        activebackground="#ff6666",  # Fond au survol
+        activeforeground="white",   # Texte blanc au survol
+        font=("Arial Bold", 13),
         borderwidth=1,
-        relief="flat"  # Supprime les bordures épaisses classiques
+        relief="flat"
     )
-    style.map("Treeview.Heading", background=[("active", "#238645")])  # Couleur au survol
+
+    style.map("Treeview.Heading", background=[("active", "#ff0000")])  # Couleur au survol
 
     # Bordures des colonnes
     style.layout("Treeview", [
@@ -126,7 +129,7 @@ def create_product_table(table_frame):
         table_frame,
         columns=("Nom", "Fournisseur", "Catégorie", "Quantité"),
         show="headings",
-        height=20
+        height=20,
     )
     tree.heading("Nom", text="Nom")
     tree.heading("Fournisseur", text="Fournisseur")
