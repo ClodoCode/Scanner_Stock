@@ -190,7 +190,7 @@ def handle_scan_entree(produit_id, username):
 
                 label_status.configure(text=f"Tous les produits ont été ajouté au stock.")
             else:
-                label_status.configure(text="Aucun produit à confirmer ou société manquant.")
+                label_status.configure(text="Aucun produit à confirmer ou société manquant.", text_color="red")
             return
 
         if produit_id not in ["RED001", "ACC001", "AJT001", "SCANPROD"]:

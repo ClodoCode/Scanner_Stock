@@ -202,7 +202,7 @@ def handle_scan_reduire(produit_id, username):
 
                 label_status.configure(text=f"Tous les produits ont été sortis du stock.")
             else:
-                label_status.configure(text="Aucun produit à confirmer ou emplacement manquant.")
+                label_status.configure(text="Aucun produit à confirmer ou emplacement manquant.", text_color="red")
             return
 
         if produit_id in ["STOCK", "FORD", "CLIO", "KANGOO", "MASTER"]:
