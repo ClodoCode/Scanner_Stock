@@ -178,11 +178,19 @@ def handle_scan_reduire(produit_id, username):
             if emplacement and produits_scannes:
                 if emplacement == "STOCK":
 
+                    message = f"Sortie stock :\n\n"
                     for produit_id, infos in produits_scannes.items():
+                        message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
                         add_record_reduire_to_airtable_gestion(produit_id, infos["quantite_scannee"], emplacement, username)
                 else:
+                    message = f"Sortie stock vers {emplacement} :\n\n"
                     for produit_id, infos in produits_scannes.items():
+                        message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
                         reduire_camion_gestion(produit_id, infos["quantite_scannee"], emplacement, username)
+
+                envoie_msg_stock(message)
+                emplacement = ""
+                label_status_emplacement.configure(text=f"Emplacement : ")
 
                 produits_scannes.clear()
 
@@ -192,7 +200,7 @@ def handle_scan_reduire(produit_id, username):
                         item.destroy()
 
 
-                label_status.configure(text=f"Tous les produits ont été sortis de {emplacement}.")
+                label_status.configure(text=f"Tous les produits ont été sortis du stock.")
             else:
                 label_status.configure(text="Aucun produit à confirmer ou emplacement manquant.")
             return
