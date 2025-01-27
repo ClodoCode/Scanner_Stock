@@ -151,7 +151,6 @@ def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username, socie
             "Emplacement" : "STOCK",
             "Qté Stock": qte_scan,
             "Personne": username,
-            "Societe": societe
         }
     }
 
@@ -302,7 +301,7 @@ def list_command():
             }
             commands.append(command)
 
-        return command
+        return commands
     else:
         print(f"Erreur {response.status_code} : {response.text}")
         return None
@@ -392,7 +391,7 @@ def load_users_from_json(file_path):
                 if "nom" not in user_data or "role" not in user_data:
                     print(f"Erreur : Format JSON incorrect pour l'utilisateur {user_id}.")
                     return {}
-            print("Utilisateurs chargés :", users)  # Affichage pour débogage
+            print("Utilisateurs chargés")  # Affichage pour débogage
             return users
     except FileNotFoundError:
         print(f"Erreur : Fichier '{file_path}' non trouvé.")

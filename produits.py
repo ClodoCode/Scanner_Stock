@@ -2,6 +2,7 @@ from tkinter import *
 from customtkinter import *
 from functools import partial  # Pour utiliser partial
 from fonction import list_produit, plus_list_prod, moins_list_prod, crea_command, envoie_msg_command
+import threading
 
 # Couleurs modernes
 BG_COLOR = "#4b5e61"

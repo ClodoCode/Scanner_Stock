@@ -10,6 +10,26 @@
         "societe": "ISE"
 
     },
+    "utilisateurCT": {
+        "nom": "CT",
+        "role": "administrateur",
+        "societe": "TOUTE"
+    },
+    "utilisateurJD": {
+        "nom": "JD",
+        "role": "invite",
+        "societe": "ISE"
+    },
+    "utilisateurGF": {
+        "nom": "GEOFFREY",
+        "role": "invite",
+        "societe": "ISE"
+    },
+    "utilisateurCM": {
+        "nom": "CARMELO",
+        "role": "invite",
+        "societe": "ISE"
+    },
     "utilisateur789": {
         "nom": "INVITE",
         "role": "invite",

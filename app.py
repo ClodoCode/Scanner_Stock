@@ -7,7 +7,7 @@ from dashboard import show_dashboard
 from sortie import show_sortie, handle_scan_reduire, get_produits_scannes_r
 from entree import show_entree, handle_scan_entree, get_produits_scannes_a
 from fonction import load_users_from_json
-from produits import show_all_products
+from produits_v2 import show_all_products
 from commande import show_commande
 from users import show_users
 from settings import show_settings
@@ -82,8 +82,8 @@ class Application(CTk):
         menu_label.pack(pady=(5, 5))
 
         # Boutons
-        self.dashboard_button = self.create_button(self.sidebar_frame, "Dashboard", "package_icon.png", lambda: show_dashboard(self.main_view))
-        self.users_button = self.create_button(self.sidebar_frame, "Users", "group.png", lambda: show_users(self.main_view))
+        self.dashboard_button = self.create_button(self.sidebar_frame, "Dashboard", "package_icon.png", lambda: self.on_press_button("dash"))
+        self.users_button = self.create_button(self.sidebar_frame, "Users", "group.png", lambda: self.on_press_button("users"))
 
         # Section 2 - Catégorie
         self.category_section = CTkFrame(self.sidebar_frame, fg_color="transparent", corner_radius=10)
@@ -95,11 +95,11 @@ class Application(CTk):
 
         username = self.current_user_name
 
-        self.reduire_button = self.create_button(self.sidebar_frame, "Sortie", "logistics_icon.png", lambda: show_sortie(self.main_view))
-        self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "delivered_icon.png", lambda: show_entree(self.main_view))
-        self.produit_button = self.create_button(self.sidebar_frame, "Produits", "parcel.png", lambda: show_all_products(self.main_view, username))
-        self.commande_button = self.create_button(self.sidebar_frame, "Commande", "tracking.png", lambda: show_commande(self.main_view))
-        self.settings_button = self.create_button(self.sidebar_frame, "Settings", "gear.png", lambda: show_settings(self.main_view))
+        self.reduire_button = self.create_button(self.sidebar_frame, "Sortie", "logistics_icon.png", lambda: self.on_press_button("sortie"))
+        self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "delivered_icon.png", lambda: self.on_press_button("entree"))
+        self.produit_button = self.create_button(self.sidebar_frame, "Produits", "parcel.png", lambda: self.on_press_button("prod"))
+        self.commande_button = self.create_button(self.sidebar_frame, "Commande", "tracking.png", lambda: self.on_press_button("command"))
+        self.settings_button = self.create_button(self.sidebar_frame, "Settings", "gear.png", lambda: self.on_press_button("settings"))
 
         # Conteneur pour les éléments de statut et déconnexion
         self.footer_frame = CTkFrame(master=self.sidebar_frame, fg_color="transparent")
@@ -245,33 +245,45 @@ class Application(CTk):
             if len(self.produits_scannes_a) > 0:
                 return
 
-        if self.current_tab == "scan_prod":
-            handle_scan_prod(scanned_code)
 
-
+        # Dictionnaire pour mapper les codes scannés aux actions
+        tab_scan = {
+            "ACC001": ("dashboard", show_dashboard),
+            "RED001": ("sortie", show_sortie),
+            "AJT001": ("entree", show_entree),
+            "SCANPROD": ("scan_prod", lambda view: show_all_products(view, username)),
+            "COMMAND": ("commande", show_users),
+            "USERS": ("users", show_users),
+            "SETTINGS": ("settings", show_settings),
+        }
 
         # Vérification de l'onglet actuel
-        if scanned_code == "ACC001":
-            self.current_tab = "dashboard"
-            show_dashboard(self.main_view)
-        elif scanned_code == "RED001":
-            self.current_tab = "sortie"
-            show_sortie(self.main_view)
-        elif scanned_code == "AJT001":
-            self.current_tab = "entree"
-            show_entree(self.main_view)
-        elif scanned_code == "SCANPROD":
-            self.current_tab = "scan_prod"
-            show_all_products(self.main_view, username)
-        elif scanned_code == "COMMAND":
-            self.current_tab = "commande"
-            show_users(self.main_view)
-        elif scanned_code == "USERS":
-            self.current_tab = "users"
-            show_users(self.main_view)
-        elif scanned_code == "SETTINGS":
-            self.current_tab = "settings"
-            show_settings(self.main_view)
+        if scanned_code in tab_scan:
+            self.current_tab, action = tab_scan[scanned_code]
+            action(self.main_view)
+
+    def on_press_button(self, choix):
+
+
+        self.reset_inactivity_timer()
+        username = self.current_user_name
+
+        # Dictionnaire pour mapper les codes scannés aux actions
+        tab_button = {
+            "dash": ("dashboard", show_dashboard),
+            "sortie": ("sortie", show_sortie),
+            "ajouter": ("entree", show_entree),
+            "prod": ("scan_prod", lambda view: show_all_products(view, username)),
+            "command": ("commande", show_commande),
+            "users": ("users", show_users),
+            "settings": ("settings", show_settings),
+        }
+
+        # Vérification de l'onglet actuel
+        if choix in tab_button:
+            self.current_tab, action = tab_button[choix]
+            action(self.main_view)
+
 
     def capture_keypress(self, event):
         """Capture les frappes clavier et gère les codes-barres."""
