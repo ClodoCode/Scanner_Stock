@@ -49,7 +49,7 @@ class Application(CTk):
 
         # Définir le titre et l'icône
         self.title("Logiciel Stock")
-        self.iconbitmap("logo.ico")
+        self.iconbitmap("icons/logo.ico")
 
         # Définir le mode d'apparence
         set_appearance_mode("light")
@@ -69,7 +69,7 @@ class Application(CTk):
         self.sidebar_frame.pack(fill="y", anchor="w", side="left")
 
         # Logo
-        logo_img_data = Image.open("logo.png")
+        logo_img_data = Image.open("icons/logo.png")
         logo_img = CTkImage(dark_image=logo_img_data, light_image=logo_img_data, size=(77.68, 85.42))
         CTkLabel(master=self.sidebar_frame, text="", image=logo_img).pack(pady=(38, 8), anchor="center")
 
@@ -82,8 +82,8 @@ class Application(CTk):
         menu_label.pack(pady=(5, 5))
 
         # Boutons
-        self.dashboard_button = self.create_button(self.sidebar_frame, "Dashboard", "package_icon.png", lambda: self.on_press_button("dash"))
-        self.users_button = self.create_button(self.sidebar_frame, "Users", "group.png", lambda: self.on_press_button("users"))
+        self.dashboard_button = self.create_button(self.sidebar_frame, "Dashboard", "icons/package_icon.png", lambda: self.on_press_button("dash"))
+        self.users_button = self.create_button(self.sidebar_frame, "Users", "icons/group.png", lambda: self.on_press_button("users"))
 
         # Section 2 - Catégorie
         self.category_section = CTkFrame(self.sidebar_frame, fg_color="transparent", corner_radius=10)
@@ -95,11 +95,11 @@ class Application(CTk):
 
         username = self.current_user_name
 
-        self.reduire_button = self.create_button(self.sidebar_frame, "Sortie", "logistics_icon.png", lambda: self.on_press_button("sortie"))
-        self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "delivered_icon.png", lambda: self.on_press_button("entree"))
-        self.produit_button = self.create_button(self.sidebar_frame, "Produits", "parcel.png", lambda: self.on_press_button("prod"))
-        self.commande_button = self.create_button(self.sidebar_frame, "Commande", "tracking.png", lambda: self.on_press_button("command"))
-        self.settings_button = self.create_button(self.sidebar_frame, "Settings", "gear.png", lambda: self.on_press_button("settings"))
+        self.reduire_button = self.create_button(self.sidebar_frame, "Sortie", "icons/logistics_icon.png", lambda: self.on_press_button("sortie"))
+        self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "icons/delivered_icon.png", lambda: self.on_press_button("entree"))
+        self.produit_button = self.create_button(self.sidebar_frame, "Produits", "icons/parcel.png", lambda: self.on_press_button("prod"))
+        self.commande_button = self.create_button(self.sidebar_frame, "Commande", "icons/tracking.png", lambda: self.on_press_button("command"))
+        self.settings_button = self.create_button(self.sidebar_frame, "Settings", "icons/gear.png", lambda: self.on_press_button("settings"))
 
         # Conteneur pour les éléments de statut et déconnexion
         self.footer_frame = CTkFrame(master=self.sidebar_frame, fg_color="transparent")
@@ -114,7 +114,7 @@ class Application(CTk):
         self.label_sidebar_role.pack(anchor="center", ipady=5, pady=(0, 10))  # Espacement sous le nom
 
         # Bouton de déconnexion
-        self.logout_button = self.create_button(self.footer_frame, "Déconnexion", "shutdown.png", lambda: self.logout())
+        self.logout_button = self.create_button(self.footer_frame, "Déconnexion", "icons/shutdown.png", lambda: self.logout())
         
 
     def create_button(self, parent, text, img_path, command):
