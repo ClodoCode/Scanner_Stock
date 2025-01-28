@@ -44,33 +44,32 @@ def show_sortie(main_view):
     instructions_label.pack(pady=(5, 15))
 
     # Créer un cadre scrollable pour le tableau avec un fond blanc
-    scrollable_frame = CTkScrollableFrame(tab_sortie, width=1400, height=500, fg_color="white")
+    scrollable_frame = CTkScrollableFrame(tab_sortie, width=1100, height=500, fg_color="white")
     scrollable_frame.pack(padx=15, pady=(0, 10))
 
+    # Noms des colonnes
+    columns = ["Nom", "Fournisseur", "Quantité Stock", "Quantité Scannée"]
 
-    # Définir une police pour mesurer les dimensions du texte
-    header_font = Font(family="Arial", size=12, weight="bold")
+    # Définir les largeurs des colonnes
+    column_widths = {
+        "Nom": 550,
+        "Fournisseur": 150,
+        "Quantité Stock": 80,
+        "Quantité Scannée": 80,
+    }
 
     # Ajouter les en-têtes des colonnes
     header_frame = CTkFrame(scrollable_frame, fg_color="#2A8C55")
     header_frame.pack(fill="x", pady=0)
 
-    # Largeurs des colonnes
-    DEFAULT_COLUMN_WIDTH = 200
-    SPECIFIC_COLUMN_WIDTH = 500
-
-    # Noms des colonnes
-    columns = ["Nom", "Fournisseur", "Quantité Stock", "Quantité Scannée"]
-
-    column_widths = {
-        "Nom": SPECIFIC_COLUMN_WIDTH,
-        "Fournisseur": DEFAULT_COLUMN_WIDTH,
-        "Quantité Stock": SPECIFIC_COLUMN_WIDTH,
-        "Quantité Scannée": DEFAULT_COLUMN_WIDTH,
-    }
-
-
     for col in columns:
+        # Définir padx_value en fonction de la colonne
+        if col == "Quantité Scannée":
+            padx_value = 100  # Décalage spécifique pour "Quantité Scannée"
+        else:
+            padx_value = 0  # Pas de décalage pour les autres colonnes
+
+        # Créer les en-têtes des colonnes
         header_label = CTkLabel(
             header_frame,
             text=col,
@@ -78,26 +77,25 @@ def show_sortie(main_view):
             font=("Arial", 18, "bold"),
             text_color="#fff",
             fg_color="#2A8C55",
-            anchor="center"
+            anchor="center",
+            padx=padx_value  # Appliquer le décalage pour chaque colonne
         )
-        header_label.pack(side="left")
+        header_label.pack(side="left", padx=(5, 5))  # Ajouter un léger padding horizontal entre les colonnes
 
-    # Exemple de données pour le tableau (les informations produits)
-    # Note: table_data = [] implies no data for now
+    # Données de tableau (initialement vide)
     table_data = []
 
+    # Ajouter les lignes de données dans le tableau
     row_font = Font(family="Arial", size=12)
 
     for row in table_data:
         row_frame = CTkFrame(scrollable_frame, fg_color="#f7f7f7")
         row_frame.pack(fill="x", pady=0)
-        row_frame.is_header = False  # Marquer que ce n'est pas un en-tête
 
         for i, item in enumerate(row):
-            width = adjust_column_width(str(item), row_font, min_width=column_widths[i])
             entry = CTkEntry(
                 row_frame,
-                width=width,
+                width=column_widths[columns[i]],  # Utiliser la largeur de la colonne pour chaque entrée
                 state="normal",
                 justify="center",
                 fg_color="#f7f7f7",
@@ -106,7 +104,7 @@ def show_sortie(main_view):
                 text_color="#333",
             )
             entry.insert(0, item)
-            entry.pack(side="left")
+            entry.pack(side="left", padx=(5, 5))  # Ajouter un léger padding horizontal entre les colonnes
 
     global tree_reduire, label_status, label_status_emplacement
     tree_reduire = scrollable_frame
@@ -230,10 +228,10 @@ def handle_scan_reduire(produit_id, username):
                     }
                     row_frame = CTkFrame(tree_reduire, fg_color="#f7f7f7")
                     row_frame.pack(fill="x", pady=0)
-                    CTkLabel(row_frame, width=500, text=produit_info["nom"]).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=produit_info["fournisseur"]).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=500, text=str(produit_info["qte"])).pack(side="left", anchor="center")
-                    CTkLabel(row_frame, width=200, text=1).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=550, text=produit_info["nom"], font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=150, text=produit_info["fournisseur"], font=("Arial", 18)).pack(side="left", anchor="center")
+                    CTkLabel(row_frame, width=80, text=produit_info["qte"], font=("Arial", 18)).pack(side="left", anchor="center", padx=50)
+                    CTkLabel(row_frame, width=80, text=1, font=("Arial", 18)).pack(side="left", anchor="center", padx=75)
                     label_status.configure(text=f"Produit {produit_info['nom']} ajouté.")
             else:
                 label_status.configure(text=f"Produit {produit_id} non trouvé.", text_color="red")

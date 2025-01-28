@@ -138,7 +138,7 @@ def reduire_camion_gestion(produit_id, qte_scan, emplacement, username):
         print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
         return False
 
-def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username, societe):
+def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username):
     """Ajoute un enregistrement dans la table gestion."""
     produit_inf = get_produit_info(produit_id)
     print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : {qte_scan}")

@@ -9,6 +9,7 @@ from entree import show_entree, handle_scan_entree, get_produits_scannes_a
 from fonction import load_users_from_json
 from produits import show_all_products
 from commande import show_commande
+from creer import show_creer
 from users import show_users
 from settings import show_settings
 
@@ -96,8 +97,9 @@ class Application(CTk):
         username = self.current_user_name
 
         self.reduire_button = self.create_button(self.sidebar_frame, "Sortie", "icons/logistics_icon.png", lambda: self.on_press_button("sortie"))
-        self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "icons/delivered_icon.png", lambda: self.on_press_button("entree"))
+        self.ajouter_button = self.create_button(self.sidebar_frame, "Entrée", "icons/delivered_icon.png", lambda: self.on_press_button("ajouter"))
         self.produit_button = self.create_button(self.sidebar_frame, "Produits", "icons/parcel.png", lambda: self.on_press_button("prod"))
+        self.creer_button = self.create_button(self.sidebar_frame, "Créer", "icons/product-design.png", lambda: self.on_press_button("creer"))
         self.commande_button = self.create_button(self.sidebar_frame, "Commande", "icons/tracking.png", lambda: self.on_press_button("command"))
         self.settings_button = self.create_button(self.sidebar_frame, "Settings", "icons/gear.png", lambda: self.on_press_button("settings"))
 
@@ -276,6 +278,7 @@ class Application(CTk):
             "ajouter": ("entree", show_entree),
             "prod": ("scan_prod", lambda view: show_all_products(view, username)),
             "command": ("commande", show_commande),
+            "cree": ("creer", show_creer),
             "users": ("users", show_users),
             "settings": ("settings", show_settings),
         }
