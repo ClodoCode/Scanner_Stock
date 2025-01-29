@@ -331,6 +331,32 @@ def crea_command(produit_id, qte_cde, username):
         return False
 
 
+def cree_prod(nom, ref, categorie, fourn, qte, prix):
+    """Ajoute un enregistrement dans la table gestion."""
+    print(f"Création du produit : {nom}")
+    
+    data = {
+        "fields": {
+            "Nom": nom,
+            "Référence": ref,
+            "Catégorie": categorie,
+            "Fournisseur": fourn,
+            "Qté Stock": qte,
+            "Prix Unitaire": prix,
+        }
+    }
+
+    response = requests.post(BASE_URL_PRODUIT, headers=HEADERS, json=data)
+
+    if response.status_code == 200:
+        print("Produit créé avec succés.")
+        return True
+    else:
+        print(f"Erreur {response.status_code} lors de la création du produit : {response.text}")
+        return False
+
+
+
 # FONCTION POUR SLACK
 
 

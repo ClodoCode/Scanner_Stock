@@ -278,7 +278,7 @@ class Application(CTk):
             "ajouter": ("entree", show_entree),
             "prod": ("scan_prod", lambda view: show_all_products(view, username)),
             "command": ("commande", show_commande),
-            "cree": ("creer", show_creer),
+            "creer": ("creer", show_creer),
             "users": ("users", show_users),
             "settings": ("settings", show_settings),
         }

@@ -33,7 +33,7 @@ def show_users(main_view):
     )
     title_label.pack(side="left", padx=10)
 
-    refresh_icon = CTkImage(Image.open("refresh.png"), size=(20, 20))
+    refresh_icon = CTkImage(Image.open("icons/refresh.png"), size=(20, 20))
     refresh_button = CTkButton(
         master=title_frame,
         image=refresh_icon,
