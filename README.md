@@ -16,8 +16,13 @@ Voici un aperçu des principaux fichiers et de leur rôle :
 - `app.py` : Fichier principal pour exécuter l'application.
 - `dashboard.py` : Gère l'interface utilisateur du tableau de bord.
 - `produits.py` : Contient les fonctionnalités liées à la gestion des produits.
-- `scan_prod.py` : Module dédié à la fonctionnalité de scan des produits.
+- `commande.py` : Gestion des commandes des produits.
 - `users.py` : Gère les fonctionnalités liées aux utilisateurs (authentification, gestion des rôles, etc.).
+- `entree.py.py` : Gestion des entrées de stock.
+- `fonction.py` : Fonctions utilitaires pour l'application.
+- `login.py` : Gestion de l'authentification des utilisateurs.
+- `sortie.py` : Gestion des sorties de stock.
+- `settings.py` : Paramètres globaux de l'application.
 
 ## Prérequis
 
