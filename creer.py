@@ -34,14 +34,24 @@ def show_creer(main_view):
     ref_entry = CTkEntry(master=fields_frame, fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
     ref_entry.pack(fill="x", pady=(5, 10), padx=27)
 
+
+    categories = ["VÉHICULES", "CONSOMMABLE", "VOLET BATTANT", "NETTOYAGE/PROTECTION", "VOLET ROULANT", "ELECTRICITE", "TELECOMMANDE", "BUSE", 
+                    "SECURITE", "VMC", "COFFRET", "POIGNÉE", "VETEMENT", "MACHINE", "CALE", "ENTREE D AIR", "CHEVILLE", "FORET", "OUTILLAGE A MAIN", 
+                    "DISQUE", "EMBOUT", "FÊNETRE", "LAMES", "SCELLEMENT CHIMIQUE", "SCOTCH", "SILICONE", "VISSERIE", "HABILLAGE", "MOTEUR", "MOUSSE PU"]
+                    
+
+    fournisseurs = ["SOMFY", "AMAZON", "MANO MANO", "FOUSSIER", "WURTH", "EUROMATIK", "VDS", "RECA", "BIPA", "FRANCIAFLEX", "LARIVIERE", "KLINE", 
+                    "BERNER", "FORUM DU BATIMENT", "COPRODEX", "COGEFERM", "LEROY MERLIN", "KLOSE BESSER", "VALENTE", "ILLBRUCK", "BUBENDORFF"]
+
+
     # Menu déroulant pour la catégorie
     CTkLabel(master=fields_frame, text="Catégorie", font=("Arial Bold", 17), text_color="white").pack(anchor="nw", pady=(10, 0), padx=27)
-    category_menu = CTkOptionMenu(master=fields_frame, values=["SILICONE", "Maison", "Vêtements", "Alimentation"], fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
+    category_menu = CTkOptionMenu(master=fields_frame, values=categories, fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
     category_menu.pack(fill="x", pady=(5, 10), padx=27)
 
     # Menu déroulant pour le fournisseur
     CTkLabel(master=fields_frame, text="Fournisseur", font=("Arial Bold", 17), text_color="white").pack(anchor="nw", pady=(10, 0), padx=27)
-    supplier_menu = CTkOptionMenu(master=fields_frame, values=["WURTH", "Fournisseur B", "Fournisseur C"], fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
+    supplier_menu = CTkOptionMenu(master=fields_frame, values=fournisseurs, fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
     supplier_menu.pack(fill="x", pady=(5, 10), padx=27)
 
     # Gestion de la quantité avec les boutons + et -

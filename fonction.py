@@ -356,7 +356,6 @@ def cree_prod(nom, ref, categorie, fourn, qte, prix):
         return False
 
 
-
 # FONCTION POUR SLACK
 
 
