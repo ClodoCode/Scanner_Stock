@@ -1,7 +1,6 @@
 from customtkinter import *
 import tkinter as tk
 import json
-import time
 from PIL import Image, ImageTk
 from dashboard import show_dashboard
 from sortie import show_sortie, handle_scan_reduire, get_produits_scannes_r
@@ -12,10 +11,16 @@ from commande import show_commande
 from creer import show_creer
 from users import show_users
 from settings import show_settings
+from login import LoginWindow
+
 
 class Application(CTk):
     def __init__(self):
         super().__init__()
+
+        # Initialisation de la fenêtre de connexion
+        self.withdraw()  # Cache l'interface principale jusqu'à l'authentification
+        self.login_window = LoginWindow(self, self.on_login_success)
 
         # Initialisation des variables
         self.user_identified = None
@@ -57,16 +62,26 @@ class Application(CTk):
         self.configure(bg="#2A8C55")
 
     def on_resize(self, event):
-        # Ne pas exécuter la logique de redimensionnement si l'application se ferme
-        if not self.is_closing:
-            if self.sidebar_frame.winfo_exists():
+        """Empêche les erreurs de redimensionnement après fermeture."""
+        if not self.winfo_exists():  # Vérifie si la fenêtre principale existe encore
+            return
+
+        # Vérifie si sidebar_frame et son canvas existent avant de tenter de les redimensionner
+        if hasattr(self, 'sidebar_frame') and self.sidebar_frame.winfo_exists():
+            try:
                 self.sidebar_frame.configure(height=event.height)
+            except Exception as e:
+                print(f"Erreur lors du redimensionnement: {e}")
 
     def on_closing(self):
-        print("Fermeture de l'application...")
-        self.is_closing = True  # Définir le flag lorsque la fermeture commence
-        self.destroy()
+        """Ferme proprement la fenêtre et détruit les widgets avant de quitter."""
+        self.unbind("<Configure>")  # Désactive le redimensionnement avant de fermer
 
+        if hasattr(self, 'sidebar_frame') and self.sidebar_frame.winfo_exists():
+            self.sidebar_frame.destroy()
+
+        self.after(100, self.quit)
+        self.after(200, self.destroy)
 
 
     def create_sidebar(self):
@@ -182,6 +197,19 @@ class Application(CTk):
             button.configure(state="normal" if name in allowed_buttons else "disabled")
 
 
+    def on_login_success(self, username):
+        """Callback exécuté après une connexion réussie."""
+        self.user_identified = username
+        self.current_user_name = self.authorized_users[username]["nom"]
+        self.current_user_role = self.authorized_users[username]["role"]
+
+        # Mettre à jour l'interface
+        self.login(username)  # Connecter l'utilisateur
+        self.update_sidebar_status()
+        self.update_tab_access()
+        self.deiconify()  # Affiche l'application principale
+
+
     def login(self, username):
         """Cette fonction sera appelée lors de la connexion d'un utilisateur"""
         # Logique de connexion de l'utilisateur
@@ -208,6 +236,12 @@ class Application(CTk):
             show_dashboard(self.main_view)
 
         print("Utilisateur déconnecté.")
+        #Cacher la fenêtre principale
+        self.withdraw()
+
+        # Réafficher la fenêtre de login
+        self.login_window = LoginWindow(self, self.on_login_success)
+        self.login_window.deiconify()  # S'assurer qu'elle est visible
 
 
     def handle_barcode(self):
@@ -220,14 +254,6 @@ class Application(CTk):
 
         if scanned_code == "LOGOUT":
             self.logout()
-            self.scan_code = ""
-            return
-
-        if self.user_identified is None:
-            if scanned_code in self.authorized_users:
-                self.login(scanned_code)
-            else:
-                self.label_sidebar_status.configure(text="Accès refusé", text_color="red")
             self.scan_code = ""
             return
 
