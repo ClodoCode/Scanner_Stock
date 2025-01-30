@@ -77,6 +77,7 @@ def show_creer(main_view):
             prix = float(prix)  # Convertir le prix en float
         except ValueError:
             print("Erreur : Le prix doit être un nombre valide.")
+            label_status.configure(text=f"Erreur : Le prix doit être un nombre valide.", text_color="red")
             return
 
         # Appel de la fonction cree_prod
@@ -98,5 +99,3 @@ def show_creer(main_view):
 
     label_status = CTkLabel(master=main_view, text="", font=("Arial", 24, "bold"), text_color="#00ff27", fg_color="transparent")
     label_status.pack(pady=(5, 15))
-
-    label_status.configure(text="")

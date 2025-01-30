@@ -26,6 +26,7 @@ class Application(CTk):
         self.current_tab = "dashboard"  # Initialisation de current_tab
         self.produits_scannes_r = get_produits_scannes_r()
         self.produits_scannes_a = get_produits_scannes_a()
+        self.is_closing = False
 
         # Configuration de l'interface
         self.configure_window()
@@ -33,13 +34,12 @@ class Application(CTk):
         self.create_main_view()
         self.update_tab_access()  # Désactiver les onglets au démarrage
 
-        # Variable pour vérifier si la fonction d'inactivité est en cours
-        self.inactivity_timeout = 10  # Temps d'inactivité avant déconnexion (10 secondes pour les tests)
-
         # Lier les événements de pression de touche à la fonction
         self.bind("<Key>", self.capture_keypress)
 
         self.bind("<Configure>", self.on_resize)
+
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def configure_window(self):
         """Configurer la fenêtre principale de l'application."""
@@ -57,9 +57,15 @@ class Application(CTk):
         self.configure(bg="#2A8C55")
 
     def on_resize(self, event):
-        """Ajuster les éléments internes en fonction de la taille de la fenêtre."""
-        # Ajuster la barre latérale pour qu'elle remplisse la hauteur
-        self.sidebar_frame.configure(height=event.height)
+        # Ne pas exécuter la logique de redimensionnement si l'application se ferme
+        if not self.is_closing:
+            if self.sidebar_frame.winfo_exists():
+                self.sidebar_frame.configure(height=event.height)
+
+    def on_closing(self):
+        print("Fermeture de l'application...")
+        self.is_closing = True  # Définir le flag lorsque la fermeture commence
+        self.destroy()
 
 
 
@@ -147,39 +153,33 @@ class Application(CTk):
 
     def update_tab_access(self):
         """Met à jour l'accès aux onglets en fonction de l'utilisateur."""
+        all_buttons = {
+            "users": self.users_button,
+            "reduire": self.reduire_button,
+            "ajouter": self.ajouter_button,
+            "creer": self.creer_button,
+            "commande": self.commande_button,
+            "produit": self.produit_button,
+            "settings": self.settings_button,
+        }
+
         if self.user_identified is None:
-            self.users_button.configure(state="disabled")
-            self.reduire_button.configure(state="disabled")
-            self.ajouter_button.configure(state="disabled")
-            self.produit_button.configure(state="disabled")
-            self.settings_button.configure(state="disabled")
-        else:
-            user_role = self.authorized_users[self.user_identified]["role"]
-            self.current_user_role = user_role  # Mettre à jour le rôle de l'utilisateur
-            if user_role == "administrateur":
-                self.reduire_button.configure(state="normal")
-                self.ajouter_button.configure(state="normal")
-                self.users_button.configure(state="normal")
-                self.produit_button.configure(state="normal")
-                self.settings_button.configure(state="normal")
-            else:
-                self.reduire_button.configure(state="normal")
-                self.ajouter_button.configure(state="normal")
+            for button in all_buttons.values():
+                button.configure(state="disabled")
+            return
 
-    def reset_inactivity_timer(self, event=None):
-        self.inactivity_timeout = 300
+        self.current_user_role = self.authorized_users[self.user_identified]["role"]
 
-    def check_inactivity(self):
-        """Vérifie l'inactivité toutes les secondes."""
+        role_permissions = {
+            "administrateur": ["users", "reduire", "ajouter", "creer", "commande", "produit", "settings"],
+            "utilisateur": ["reduire", "ajouter", "creer", "produit", "settings"],
+            "invite": ["reduire", "ajouter"]
+        }
 
-        self.inactivity_timeout -= 1
+        allowed_buttons = role_permissions.get(self.current_user_role, [])
 
-        if self.inactivity_timeout == 0:
-            print("logout")
-            self.logout()  # Appelle la fonction de déconnexion après inactivité
-        elif self.user_identified is not None:  # Si un utilisateur est connecté et que l'inactivité n'a pas dépassé le timeout
-            # Vérifie à nouveau après 1000 ms (1 seconde)
-            self.after(1000, self.check_inactivity)
+        for name, button in all_buttons.items():
+            button.configure(state="normal" if name in allowed_buttons else "disabled")
 
 
     def login(self, username):
@@ -194,8 +194,6 @@ class Application(CTk):
         self.update_sidebar_status()
         self.update_tab_access()
 
-        self.check_inactivity()
-
 
     def logout(self):
         """Déconnecte l'utilisateur et réinitialise l'interface."""
@@ -209,8 +207,6 @@ class Application(CTk):
         if self.current_tab != "dashboard":
             show_dashboard(self.main_view)
 
-        # Arrêter la vérification de l'inactivité
-        self.reset_inactivity_timer()
         print("Utilisateur déconnecté.")
 
 
@@ -218,7 +214,6 @@ class Application(CTk):
         """Gère le scan du code-barres et la navigation entre les onglets."""
 
         scanned_code = self.scan_code.strip()
-        self.reset_inactivity_timer()
         username = self.current_user_name
         print(f"Code scanné : {scanned_code}")
         print(f"Tab actuelle = {self.current_tab}")
@@ -267,8 +262,6 @@ class Application(CTk):
 
     def on_press_button(self, choix):
 
-
-        self.reset_inactivity_timer()
         username = self.current_user_name
 
         # Dictionnaire pour mapper les codes scannés aux actions

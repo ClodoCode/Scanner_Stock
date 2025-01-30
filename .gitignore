@@ -7,3 +7,4 @@ build/app
 app.spec
 dist/
 app.exe
+certif.pfx

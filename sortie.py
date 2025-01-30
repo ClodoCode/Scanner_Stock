@@ -116,7 +116,7 @@ def show_sortie(main_view):
         text_color="green",
         fg_color="#f7f7f7"
     )
-    label_status.pack(pady=(5, 15))
+    label_status.pack(pady=(5, 5))
 
     label_status_emplacement = CTkLabel(
         tab_sortie,
@@ -125,22 +125,15 @@ def show_sortie(main_view):
         text_color="#2525fe",
         fg_color="#f7f7f7"
     )
-    label_status_emplacement.pack(pady=(5, 15))
+    label_status_emplacement.pack(pady=(5, 20))
 
-    texte_sous_tableau = CTkLabel(
-        tab_sortie,
-        text="",
-        font=("Arial", 12),
-        text_color="#555",
-        fg_color="#f7f7f7",
-        wraplength=600,
-        anchor="center"
-    )
-    texte_sous_tableau.pack(pady=10)
+    button_conf = CTkButton(master=tab_sortie, text="Confirmer", font=("Arial Bold", 17), command=lambda: handle_scan_reduire("CONFIRM001", user), fg_color="#2A8C55", text_color="white")
+    button_conf.pack(anchor="center", pady=10)
 
 mode_supp = False
 emplacement = ""
 produits_scannes = {}
+user = ""
 
 def get_produits_scannes_r():
     global produits_scannes
@@ -148,7 +141,9 @@ def get_produits_scannes_r():
 
 
 def handle_scan_reduire(produit_id, username):
-    global mode_supp, emplacement, produits_scannes
+    global mode_supp, emplacement, produits_scannes, user
+
+    user =username
 
     produit_id = str(produit_id)
 
@@ -161,15 +156,15 @@ def handle_scan_reduire(produit_id, username):
                     if item.winfo_children()[0].cget("text") == produit_info["nom"]:
                         item.destroy()
                         break
-                label_status.configure(text=f"Produit {produit_info['nom']} supprimé.")
+                label_status.configure(text=f"Produit {produit_info['nom']} supprimé.", text_color="green")
                 mode_supp = False
             else:
-                label_status.configure(text=f"Produit {produit_info['nom']} non trouvé.")
+                label_status.configure(text=f"Produit {produit_info['nom']} non trouvé.", text_color="red")
             return
 
         if produit_id == "SUPP001":
             mode_supp = True
-            label_status.configure(text="Mode suppression activé. Scannez un produit à supprimer.")
+            label_status.configure(text="Mode suppression activé. Scannez un produit à supprimer.", text_color="green")
             return
 
         if produit_id == "CONFIRM001":
@@ -198,7 +193,7 @@ def handle_scan_reduire(produit_id, username):
                         item.destroy()
 
 
-                label_status.configure(text=f"Tous les produits ont été sortis du stock.")
+                label_status.configure(text=f"Tous les produits ont été sortis du stock.", text_color="green")
             else:
                 label_status.configure(text="Aucun produit à confirmer ou emplacement manquant.", text_color="red")
             return
@@ -217,7 +212,7 @@ def handle_scan_reduire(produit_id, username):
                         if row.winfo_children()[0].cget("text") == produit_info["nom"]:
                             row.winfo_children()[3].configure(text=produits_scannes[produit_id]["quantite_scannee"])
                             break
-                    label_status.configure(text=f"Quantité scannée mise à jour pour {produit_info['nom']}.")
+                    label_status.configure(text=f"Quantité scannée mise à jour pour {produit_info['nom']}.", text_color="green")
                 else:
                     produits_scannes[produit_id] = {
                         "nom": produit_info["nom"],
