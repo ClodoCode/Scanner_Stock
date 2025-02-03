@@ -5,6 +5,10 @@ Flask-WTF==1.1.1
 WTForms==3.0.1
 python-barcode==0.14.0
 Pillow==10.3.0
+customtkinter==5.2.2
+python-dotenv==1.0.1
+slack_sdk==3.34.0
+CTkTable==1.1
 
 # Pour l'analyse et la gestion des données
 pandas==2.1.1
