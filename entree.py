@@ -106,7 +106,7 @@ def show_entree(main_view):
             entry.insert(0, item)
             entry.pack(side="left", padx=(5, 5))  # Ajouter un léger padding horizontal entre les colonnes
 
-    global tree_ajouter, label_status, label_status_societe
+    global tree_ajouter, label_status
     tree_ajouter = scrollable_frame
 
     label_status = CTkLabel(
@@ -124,7 +124,6 @@ def show_entree(main_view):
 
 
 mode_supp = False
-emplacement = ""
 produits_scannes = {}
 user = ""
 
@@ -133,7 +132,7 @@ def get_produits_scannes_a():
     return produits_scannes
 
 def handle_scan_entree(produit_id, username):
-    global mode_supp, emplacement, produits_scannes, user
+    global mode_supp, produits_scannes, user
 
     user = username
     produit_id = str(produit_id)

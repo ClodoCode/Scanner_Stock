@@ -8,7 +8,7 @@ from entree import show_entree, handle_scan_entree, get_produits_scannes_a
 from fonction import load_users_from_json
 from produits import show_all_products
 from commande import show_commande
-from creer import show_creer
+from creer import show_creer, handle_scan_cree_command, get_produits_scannes_cc, get_scan_ok
 from users import show_users
 from settings import show_settings
 from login import LoginWindow
@@ -31,6 +31,8 @@ class Application(CTk):
         self.current_tab = "dashboard"  # Initialisation de current_tab
         self.produits_scannes_r = get_produits_scannes_r()
         self.produits_scannes_a = get_produits_scannes_a()
+        self.produits_scannes_cc = get_produits_scannes_cc()
+        self.scan_ok = get_scan_ok()
         self.is_closing = False
 
         # Configuration de l'interface
@@ -249,6 +251,8 @@ class Application(CTk):
 
         scanned_code = self.scan_code.strip()
         username = self.current_user_name
+        self.scan_ok = get_scan_ok()
+
         print(f"Code scanné : {scanned_code}")
         print(f"Tab actuelle = {self.current_tab}")
 
@@ -269,6 +273,13 @@ class Application(CTk):
             if len(self.produits_scannes_a) > 0:
                 return
 
+        if self.current_tab == "creer":
+            if self.scan_ok =="ok":
+                handle_scan_cree_command(scanned_code, username)
+                if len(self.produits_scannes_cc) >0:
+                    return
+
+
 
         # Dictionnaire pour mapper les codes scannés aux actions
         tab_scan = {
@@ -277,6 +288,7 @@ class Application(CTk):
             "AJT001": ("entree", show_entree),
             "SCANPROD": ("scan_prod", lambda view: show_all_products(view, username)),
             "COMMAND": ("commande", show_users),
+            "creer": ("creer", show_creer),
             "USERS": ("users", show_users),
             "SETTINGS": ("settings", show_settings),
         }

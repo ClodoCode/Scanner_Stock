@@ -343,6 +343,7 @@ def cree_prod(nom, ref, categorie, fourn, qte, prix):
             "Fournisseur": fourn,
             "Qté Stock": qte,
             "Prix Unitaire": prix,
+            "Favoris": True,
         }
     }
 
