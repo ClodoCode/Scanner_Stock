@@ -1,5 +1,7 @@
 from customtkinter import *
 import tkinter
+import time
+import threading
 from tkinter.font import Font
 from fonction import cree_prod, get_produit_info, crea_command
 
@@ -158,7 +160,7 @@ def get_scan_ok():
     return scan_ok
 
 def command(main_view):
-    global produits_scannes, scan_ok, fields_frame, tree_command, user
+    global produits_scannes, scan_ok, fields_frame, tree_command, user, progress_bar
     scan_ok = "ok"
 
     print(f"{scan_ok}")
@@ -265,24 +267,13 @@ def handle_scan_cree_command(produit_id, username):
             return
 
         if produit_id == "CONFIRM001":
-            if produits_scannes:
+            if not produits_scannes:
+                label_status.configure(text="Aucun produit à commander.", text_color="red")
+                return
 
-                for produit_id, infos in produits_scannes.items():
-                    message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
-                    crea_command(produit_id, infos["quantite_scannee"], username)
-                produits_scannes.clear()
+            process_order(user)
 
-                for item in tree_command.winfo_children():
-                    # Par exemple, si les en-têtes ont une couleur différente
-                    if item.cget("fg_color") != "#2A8C55":  # Couleur des en-têtes
-                        item.destroy()
-
-                label_status.configure(text=f"Toutes les commandes on été créées.", text_color="green")
-            else:
-                label_status.configure(text="Aucun produit à confirmer.", text_color="red")
-            return
-
-        if produit_id not in ["RED001", "ACC001", "AJT001", "SCANPROD"]:
+        if produit_id not in ["RED001", "ACC001", "AJT001", "SCANPROD", "CONFIRM001"]:
             produit_info = get_produit_info(produit_id)
             if produit_info:
                 if produit_id in produits_scannes:
@@ -313,10 +304,9 @@ def handle_scan_cree_command(produit_id, username):
         label_status.configure(text=f"Erreur: {str(e)}", text_color="red")
 
 
-
 def process_order(username):
-    """Crée une commande pour chaque produit scanné avec la quantité correspondante."""
-    global produits_scannes, user
+    """Crée une commande pour chaque produit scanné avec un effet de barre de progression moderne."""
+    global produits_scannes, user, progress_bar
 
     user = username
 
@@ -324,13 +314,38 @@ def process_order(username):
         label_status.configure(text="Aucun produit à commander.", text_color="red")
         return
 
-    for produit_id, infos in produits_scannes.items():
-        crea_command(produit_id, infos["quantite_scannee"], user)
+    # Création d'une barre de progression avec un design plus moderne
+    progress_bar = CTkProgressBar(
+        fields_frame, 
+        width=300, 
+        height=12, 
+        corner_radius=10,  
+        fg_color="#2E2E2E",  # Couleur de fond
+        progress_color="#4CAF50"  # Couleur de progression (vert moderne)
+    )
+    progress_bar.pack(pady=10)
+    progress_bar.set(0)
 
-    # Nettoyer l'affichage après validation
-    produits_scannes.clear()
-    for item in tree_command.winfo_children():
-        if item.cget("fg_color") != "#2A8C55":  # Garder les en-têtes
-            item.destroy()
+    step = 1 / len(produits_scannes)
 
-    label_status.configure(text="Toutes les commandes ont été créées avec succès.", text_color="green")
+    def update_progress():
+        for i, (produit_id, infos) in enumerate(produits_scannes.items(), start=1):
+            time.sleep(0.5)  # Simule un délai de traitement
+            
+            crea_command(produit_id, infos["quantite_scannee"], user)
+
+            # Effet progressif fluide
+            for j in range(10):  # 10 petites étapes pour un remplissage progressif
+                progress_bar.set((i - 1) * step + (j / 10) * step)
+                time.sleep(0.05)  # Petit délai pour lisser l'animation
+
+            fields_frame.update_idletasks()
+
+        # Fin de la progression
+        progress_bar.set(1)
+        label_status.configure(text="Toutes les commandes ont été créées avec succès.", text_color="green")
+        time.sleep(0.5)
+        progress_bar.destroy()
+
+    # Exécuter dans un thread pour éviter de bloquer l'interface
+    threading.Thread(target=update_progress, daemon=True).start()
