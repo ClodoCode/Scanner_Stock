@@ -1,5 +1,7 @@
 from customtkinter import *
 import tkinter as tk
+import threading
+import time
 from PIL import Image, ImageTk
 from tkinter.font import Font
 from fonction import get_produit_info, add_record_ajouter_to_airtable_gestion, envoie_msg_stock
@@ -10,6 +12,9 @@ def show_entree(main_view):
     # Effacer le contenu existant dans main_view
     for widget in main_view.winfo_children():
         widget.destroy()
+
+
+    global tree_ajouter, label_status, tab_entree
 
     # Créer un cadre principal pour cette page
     tab_entree = CTkFrame(master=main_view, fg_color="#f7f7f7")
@@ -106,7 +111,6 @@ def show_entree(main_view):
             entry.insert(0, item)
             entry.pack(side="left", padx=(5, 5))  # Ajouter un léger padding horizontal entre les colonnes
 
-    global tree_ajouter, label_status
     tree_ajouter = scrollable_frame
 
     label_status = CTkLabel(
@@ -159,21 +163,7 @@ def handle_scan_entree(produit_id, username):
 
         if produit_id == "CONFIRM001":
             if produits_scannes:
-
-                message = f"Entrée stock :\n\n"
-
-                for produit_id, infos in produits_scannes.items():
-                    message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
-                    add_record_ajouter_to_airtable_gestion(produit_id, infos["quantite_scannee"], username)
-                envoie_msg_stock(message)
-                produits_scannes.clear()
-
-                for item in tree_ajouter.winfo_children():
-                    # Par exemple, si les en-têtes ont une couleur différente
-                    if item.cget("fg_color") != "#2A8C55":  # Couleur des en-têtes
-                        item.destroy()
-
-                label_status.configure(text=f"Tous les produits ont été ajoutés au stock.", text_color="green")
+                process_order(user)
             else:
                 label_status.configure(text="Aucun produit à confirmer.", text_color="red")
             return
@@ -207,3 +197,65 @@ def handle_scan_entree(produit_id, username):
     except Exception as e:
         print(f"Erreur: {str(e)}")
         label_status.configure(text=f"Erreur: {str(e)}", text_color="red")
+
+
+def process_order(username):
+    """Crée une commande pour chaque produit scanné avec un effet de barre de progression moderne."""
+    global produits_scannes, progress_bar, emplacement
+
+    if not produits_scannes:
+        label_status.configure(text="Aucun produit à entré.", text_color="red")
+        return
+
+    # Création de la barre de progression stylisée
+    progress_bar = CTkProgressBar(
+        tab_entree, 
+        width=300, 
+        height=12, 
+        corner_radius=10,  
+        fg_color="#2E2E2E",  # Fond sombre
+        progress_color="#4CAF50"  # Couleur de progression verte moderne
+    )
+    progress_bar.pack(pady=10)
+    progress_bar.set(0)
+
+    step = 1 / len(produits_scannes)
+
+    message = f"Entrée stock :\n\n"
+
+    def update_progress():
+        nonlocal message
+
+        try:
+            for i, (produit_id, infos) in enumerate(produits_scannes.items(), start=1):
+                time.sleep(0.5)  
+
+                message += f"- {infos['nom']} : {infos['quantite_scannee']} unités\n"
+                add_record_ajouter_to_airtable_gestion(produit_id, infos["quantite_scannee"], username)
+
+                for j in range(10):  
+                    progress_bar.set((i - 1) * step + (j / 10) * step)
+                    time.sleep(0.05)
+
+                tab_entree.update_idletasks()
+
+            # Fin de la progression
+            progress_bar.set(1)
+            time.sleep(0.5)
+            progress_bar.destroy()
+
+            # Envoi du message final
+            envoie_msg_stock(message)
+            produits_scannes.clear()
+
+            for item in tree_ajouter.winfo_children():
+                if item.cget("fg_color") != "#2A8C55":  # Vérifie la couleur des en-têtes
+                    item.destroy()
+
+            label_status.configure(text=f"Tous les produits ont été sortis du stock.", text_color="green")
+
+        except Exception as e:
+            print(f"Erreur dans process_order : {e}")
+
+    # Exécuter dans un thread pour éviter de bloquer l’interface
+    threading.Thread(target=update_progress, daemon=True).start()
