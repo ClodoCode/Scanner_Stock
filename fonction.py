@@ -15,10 +15,12 @@ TABLE_NAME = "code_barre"
 TABLE_GESTION = "Gestion"
 TABLE_PRODUIT = "Produits"
 TABLE_COMMAND = "Commandes"
+TABLE_CONF_COMMAND = "Conf Cde"
 BASE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
 BASE_URL_GESTION = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_GESTION}"
 BASE_URL_PRODUIT = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_PRODUIT}"
 BASE_URL_COMMAND = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_COMMAND}"
+BASE_URL_CONF_COMMAND = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_CONF_COMMAND}"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
@@ -39,12 +41,6 @@ def get_produit_info(produit_id):
         categorie_produit = fields.get("Catégorie", "Catégorie inconnue")
         fournisseur_produit = fields.get("Fournisseur", "Fournisseur inconnu")
         qte_produit = fields.get("codeb_qte", "Qte inconnu")
-        photo_produit = None
-        if "Photo" in fields:
-            attachments = fields["Photo"]
-            if attachments:
-                # Prendre la première image
-                photo_produit = attachments[0].get("url", "Photo non disponible")
 
         return {
             "id": produit_id,  # Ajout de l'ID pour le tableau
@@ -52,7 +48,6 @@ def get_produit_info(produit_id):
             "categorie": categorie_produit,
             "fournisseur": fournisseur_produit,
             "qte": qte_produit,
-            "photo": photo_produit,
         }
     else:
         print(f"Erreur {response.status_code} lors de la récupération du produit : {response.text}")
@@ -295,7 +290,10 @@ def list_command():
             command = {
                 "Num cde": fields.get("Nom cde", "Nom inconnu"),
                 "Produits": fields.get("Produits", "Produits inconnue"),
-                "ref": fields.get("Référence", "Référence inconnu"),
+                "ref": fields.get("Référence", "Référence inconnue"),
+                "fournisseur": fields.get("Fournisseur", "Fournisseur inconnue"),
+                "id": fields.get("id", "id inconnue"),
+                "status": fields.get("Status", "Status inconnue"),
                 "qte_command": fields.get("Qte Cde", "Qte Cde inconnue"),
                 "qte_recu": fields.get("Qté reçus", "Qté reçus inconnue"),
             }
@@ -354,6 +352,25 @@ def cree_prod(nom, ref, categorie, fourn, qte, prix):
         return True
     else:
         print(f"Erreur {response.status_code} lors de la création du produit : {response.text}")
+        return False
+
+def confirm_command(id_command, qte):
+    
+    data = {
+        "fields": {
+            "Commande": [id_command],
+            "Action": "Réception",
+            "Qté reçus": qte,
+        }
+    }
+
+    response = requests.post(BASE_URL_CONF_COMMAND, headers=HEADERS, json=data)
+
+    if response.status_code == 200:
+        print("Commande réceptionné avec succès.")
+        return True
+    else:
+        print(f"Erreur {response.status_code} lors de la reception de la commande : {response.text}")
         return False
 
 

@@ -287,7 +287,7 @@ class Application(CTk):
             "RED001": ("sortie", show_sortie),
             "AJT001": ("entree", show_entree),
             "SCANPROD": ("scan_prod", lambda view: show_all_products(view, username)),
-            "COMMAND": ("commande", show_users),
+            "COMMAND": ("commande", show_commande),
             "creer": ("creer", show_creer),
             "USERS": ("users", show_users),
             "SETTINGS": ("settings", show_settings),

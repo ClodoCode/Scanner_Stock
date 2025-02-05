@@ -133,7 +133,7 @@ def crea_prod(main_view):
         # Appel de la fonction cree_prod
         cree_prod(nom, ref, categorie, fournisseur, quantite, prix)
         if cree_prod:
-            label_status.configure(text=f"Produit : {nom} créé")
+            label_status.configure(text=f"Produit : {nom} créé", text_color="green")
 
 
 
