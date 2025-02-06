@@ -257,6 +257,7 @@ def list_produit():
 
             produit = {
                 "nom": fields.get("Nom", "Nom inconnu"),
+                "ref": fields.get("Référence", "Référence inconnue"),
                 "categorie": fields.get("Catégorie", "Catégorie inconnue"),
                 "fournisseur": fields.get("Fournisseur", "Fournisseur inconnu"),
                 "qte": fields.get("Qté Stock (Réel)", "Qte inconnue"),
@@ -329,7 +330,7 @@ def crea_command(produit_id, qte_cde, username):
         return False
 
 
-def cree_prod(nom, ref, categorie, fourn, qte, prix):
+def cree_prod(nom, ref, categorie, fourn, qte, prix, mini, max):
     """Ajoute un enregistrement dans la table gestion."""
     print(f"Création du produit : {nom}")
     
@@ -342,6 +343,8 @@ def cree_prod(nom, ref, categorie, fourn, qte, prix):
             "Qté Stock": qte,
             "Prix Unitaire": prix,
             "Favoris": True,
+            "Minimum": mini,
+            "Maximum": max,
         }
     }
 

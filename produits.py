@@ -92,7 +92,7 @@ def show_all_products(main_view, username):
 
 def create_table_headers(table_frame, products):
     """Crée les en-têtes de colonnes pour la table des produits avec un bandeau gris clair."""
-    headers = ["Nom", "Fournisseur", "Catégorie", "Quantité", "Actions"]
+    headers = ["Nom", "Réf", "Fournisseur", "Catégorie", "Quantité", "Actions"]
     suppliers = ["Tous"] + sorted(set(p["fournisseur"] for p in products))
     categories = ["Tous"] + sorted(set(p["categorie"] for p in products))
 
@@ -199,23 +199,29 @@ def update_product_table(products, table_frame, username):
         )
         name_label.grid(row=row, column=0, padx=5, pady=5, sticky="nsew")
 
+        ref_label = CTkLabel(
+            table_frame, text=product["ref"], font=("Arial", 16), text_color=text_color
+        )
+        ref_label.grid(row=row, column=1, padx=5, pady=5, sticky="nsew")
+
         fournisseur_label = CTkLabel(
             table_frame, text=product["fournisseur"], font=("Arial", 16), text_color=text_color
         )
-        fournisseur_label.grid(row=row, column=1, padx=5, pady=5, sticky="nsew")
+        fournisseur_label.grid(row=row, column=2, padx=5, pady=5, sticky="nsew")
 
         categorie_label = CTkLabel(
             table_frame, text=product["categorie"], font=("Arial", 16), text_color=text_color
         )
-        categorie_label.grid(row=row, column=2, padx=5, pady=5, sticky="nsew")
+        categorie_label.grid(row=row, column=3, padx=5, pady=5, sticky="nsew")
 
         quantity_label = CTkLabel(
             table_frame, text=str(product["qte"]), font=("Arial", 16), text_color=text_color
         )
-        quantity_label.grid(row=row, column=3, padx=5, pady=5, sticky="nsew")
+        quantity_label.grid(row=row, column=4, padx=5, pady=5, sticky="nsew")
 
         # Ajouter les labels au dictionnaire `product`
         product["name_label"] = name_label
+        product["ref_label"] = ref_label
         product["quantity_label"] = quantity_label
         product["fournisseur_label"] = fournisseur_label
         product["categorie_label"] = categorie_label
@@ -223,7 +229,7 @@ def update_product_table(products, table_frame, username):
 
         # Cadre pour les actions (+ et -)
         action_frame = CTkFrame(table_frame, fg_color="transparent")
-        action_frame.grid(row=row, column=4, padx=5, pady=5, sticky="nsew")
+        action_frame.grid(row=row, column=5, padx=5, pady=5, sticky="nsew")
         
         # Bouton +
         CTkButton(
@@ -247,21 +253,28 @@ def afficher_rea(products, table_frame, username):
         CTkLabel(
             table_frame, text=product["nom"], font=("Arial", 16), text_color="red"
         ).grid(row=row, column=0, padx=5, pady=5, sticky="nsew")
+
+        CTkLabel(
+            table_frame, text=product["ref"], font=("Arial", 16), text_color="red"
+        ).grid(row=row, column=1, padx=5, pady=5, sticky="nsew")
+
         CTkLabel(
             table_frame, text=product["fournisseur"], font=("Arial", 16), text_color="red"
-        ).grid(row=row, column=1, padx=5, pady=5, sticky="nsew")
+        ).grid(row=row, column=2, padx=5, pady=5, sticky="nsew")
+
         CTkLabel(
             table_frame, text=product["categorie"], font=("Arial", 16), text_color="red"
-        ).grid(row=row, column=2, padx=5, pady=5, sticky="nsew")
+        ).grid(row=row, column=3, padx=5, pady=5, sticky="nsew")
+
         quantity_label = CTkLabel(
             table_frame, text=str(product["qte"]), font=("Arial", 16), text_color="red"
         )
-        quantity_label.grid(row=row, column=3, padx=5, pady=5, sticky="nsew")
+        quantity_label.grid(row=row, column=4, padx=5, pady=5, sticky="nsew")
 
         product["quantity_label"] = quantity_label
 
         action_frame = CTkFrame(table_frame, fg_color="transparent")
-        action_frame.grid(row=row, column=4, padx=5, pady=5, sticky="nsew")
+        action_frame.grid(row=row, column=5, padx=5, pady=5, sticky="nsew")
         CTkButton(action_frame, text="Commander", width=60, command=partial(command, product, username)).pack(side="left", padx=5)
 
 
@@ -276,6 +289,7 @@ def increment_quantity(product, username):
         if not is_low_stock(product) and product in list_rea:
             list_rea.remove(product)  # Retirer de la liste des produits à commander
             product["name_label"].configure(text_color=TEXT_COLOR)  # Mettre en noir
+            product["ref_label"].configure(text_color=TEXT_COLOR)  # Mettre en noir
             product["fournisseur_label"].configure(text_color=TEXT_COLOR)
             product["categorie_label"].configure(text_color=TEXT_COLOR)
             product["quantity_label"].configure(text_color=TEXT_COLOR)
@@ -293,6 +307,7 @@ def decrement_quantity(product, username):
             if is_low_stock(product) and product not in list_rea:
                 list_rea.append(product)  # Ajouter à la liste des produits à commander
                 product["name_label"].configure(text_color="red")  # Mettre en rouge
+                product["ref_label"].configure(text_color="red")  # Mettre en noir
                 product["fournisseur_label"].configure(text_color="red")
                 product["categorie_label"].configure(text_color="red")
                 product["quantity_label"].configure(text_color="red")

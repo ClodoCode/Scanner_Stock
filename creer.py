@@ -54,6 +54,7 @@ def show_creer(main_view):
     label_status.pack(pady=(5, 15))
 
     crea_prod(main_view)
+
 def crea_prod(main_view):
     global scan_ok
     for widget in fields_frame.winfo_children():
@@ -61,96 +62,126 @@ def crea_prod(main_view):
 
     scan_ok = "pas ok"
 
-    CTkLabel(master=fields_frame, text="Création de Produit", font=("Arial Black", 25), text_color="white").pack(anchor="nw", pady=(20, 10), padx=27)
+    # Configuration du frame principal
+    fields_frame.columnconfigure(0, weight=1)
+    fields_frame.columnconfigure(1, weight=1)
 
-    # Champs pour le nom du produit
-    CTkLabel(master=fields_frame, text="Nom du Produit", font=("Arial Bold", 17), text_color="white").pack(anchor="nw", pady=(15, 0), padx=27)
-    nom_entry = CTkEntry(master=fields_frame, fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
-    nom_entry.pack(fill="x", pady=(5, 10), padx=27)
+    # Titre
+    title_label = CTkLabel(fields_frame, text="Création de Produit", font=("Arial Black", 25), text_color="white")
+    title_label.grid(row=0, column=0, columnspan=2, pady=(20, 10), padx=20, sticky="ew")
 
-    # Champs pour la référence produit
-    CTkLabel(master=fields_frame, text="Référence Produit", font=("Arial Bold", 17), text_color="white").pack(anchor="nw", pady=(10, 0), padx=27)
-    ref_entry = CTkEntry(master=fields_frame, fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
-    ref_entry.pack(fill="x", pady=(5, 10), padx=27)
+    # Fonction pour créer un champ avec un label
+    def create_entry_field(label_text, row):
+        label = CTkLabel(fields_frame, text=label_text, font=("Arial Bold", 17), text_color="white")
+        label.grid(row=row, column=0, columnspan=2, sticky="w", padx=20, pady=(10, 0))
 
+        entry = CTkEntry(fields_frame, fg_color="white", text_color="black", corner_radius=8)
+        entry.grid(row=row + 1, column=0, columnspan=2, sticky="ew", padx=20, pady=(5, 10))
+        return entry
 
-    categories = ["BUSE", "CALE", "CHEVILLE", "CLIENT", "COFFRET", "CONSOMMABLE", "DISQUE", "ELECTRICITE", "EMBOUT", "ENTREE D AIR", "FÊNETRE", 
-                    "FORET", "HABILLAGE", "LAMES", "MACHINE", "MOUSSE PU", "NETTOYAGE/PROTECTION", "NON STOCKÉ", "MOTEUR", "OUTILLAGE A MAIN", "POIGNÉE", "SCELLEMENT CHIMIQUE", 
-                    "SCOTCH", "SECURITE", "SILICONE", "SPÉCIAL", "TELECOMMANDE", "VÉHICULES", "VETEMENT", "VISSERIE", "VMC", "VOLET BATTANT", "VOLET ROULANT"]
+    # Champs d'entrée
+    nom_entry = create_entry_field("Nom du Produit", 1)
+    ref_entry = create_entry_field("Référence Produit", 3)
 
-                    
+    # Menus déroulants
+    categories = ["BUSE", "CALE", "CHEVILLE", "CLIENT", "COFFRET", "CONSOMMABLE", "DISQUE", "ELECTRICITE", "EMBOUT"]
+    fournisseurs = ["SOMFY", "AMAZON", "MANO MANO", "FOUSSIER", "WURTH"]
 
-    fournisseurs = ["SOMFY", "AMAZON", "MANO MANO", "FOUSSIER", "WURTH", "EUROMATIK", "VDS", "RECA", "BIPA", "FRANCIAFLEX", "LARIVIERE", "KLINE", 
-                    "BERNER", "FORUM DU BATIMENT", "COPRODEX", "COGEFERM", "LEROY MERLIN", "KLOSE BESSER", "VALENTE", "ILLBRUCK", "BUBENDORFF"]
+    category_label = CTkLabel(fields_frame, text="Catégorie", font=("Arial Bold", 17), text_color="white")
+    category_label.grid(row=5, column=0, sticky="w", padx=20, pady=(10, 0))
 
+    category_menu = CTkOptionMenu(fields_frame, values=categories, fg_color="white", text_color="black", corner_radius=8)
+    category_menu.grid(row=6, column=0, columnspan=2, sticky="ew", padx=20, pady=(5, 10))
 
-    # Menu déroulant pour la catégorie
-    CTkLabel(master=fields_frame, text="Catégorie", font=("Arial Bold", 17), text_color="white").pack(anchor="nw", pady=(10, 0), padx=27)
-    category_menu = CTkOptionMenu(master=fields_frame, values=categories, fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
-    category_menu.pack(fill="x", pady=(5, 10), padx=27)
+    supplier_label = CTkLabel(fields_frame, text="Fournisseur", font=("Arial Bold", 17), text_color="white")
+    supplier_label.grid(row=7, column=0, sticky="w", padx=20, pady=(10, 0))
 
-    # Menu déroulant pour le fournisseur
-    CTkLabel(master=fields_frame, text="Fournisseur", font=("Arial Bold", 17), text_color="white").pack(anchor="nw", pady=(10, 0), padx=27)
-    supplier_menu = CTkOptionMenu(master=fields_frame, values=fournisseurs, fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
-    supplier_menu.pack(fill="x", pady=(5, 10), padx=27)
+    supplier_menu = CTkOptionMenu(fields_frame, values=fournisseurs, fg_color="white", text_color="black", corner_radius=8)
+    supplier_menu.grid(row=8, column=0, columnspan=2, sticky="ew", padx=20, pady=(5, 10))
 
-    # Gestion de la quantité avec les boutons + et -
-    CTkLabel(master=fields_frame, text="Quantité", font=("Arial Bold", 17), text_color="white").pack(anchor="nw", pady=(10, 0), padx=27)
-    quantity_frame = CTkFrame(master=fields_frame, fg_color="transparent")
-    quantity_frame.pack(fill="x", pady=(5, 10), padx=27)
+    # Quantité avec boutons + et -
+    quantity_label = CTkLabel(fields_frame, text="Quantité", font=("Arial Bold", 17), text_color="white")
+    quantity_label.grid(row=9, column=0, sticky="w", padx=20, pady=(10, 0))
 
-    quantity_var = tkinter.IntVar(value=1)  # Quantité initiale
-    def increase_quantity(): quantity_var.set(quantity_var.get() + 1)
-    def decrease_quantity(): 
-        if quantity_var.get() > 0: quantity_var.set(quantity_var.get() - 1)
+    quantity_frame = CTkFrame(fields_frame, fg_color="transparent")
+    quantity_frame.grid(row=10, column=0, columnspan=2, sticky="ew", padx=20, pady=(5, 10))
 
-    CTkButton(master=quantity_frame, text="-", width=40, command=decrease_quantity, fg_color=HIGHLIGHT_COLOR, hover_color="#207244").pack(side="left", padx=(0, 10))
-    CTkLabel(master=quantity_frame, textvariable=quantity_var, font=("Arial Bold", 16), text_color="white").pack(side="left", padx=(0, 10))
-    CTkButton(master=quantity_frame, text="+", width=40, command=increase_quantity, fg_color=HIGHLIGHT_COLOR, hover_color="#207244").pack(side="left")
+    quantity_var = tkinter.IntVar(value=1)
+    
+    def increase_quantity():
+        quantity_var.set(quantity_var.get() + 1)
+
+    def decrease_quantity():
+        if quantity_var.get() > 0:
+            quantity_var.set(quantity_var.get() - 1)
+
+    minus_button = CTkButton(quantity_frame, text="-", width=30, command=decrease_quantity)
+    minus_button.pack(side="left", padx=(0, 10))
+
+    quantity_display = CTkLabel(quantity_frame, textvariable=quantity_var, font=("Arial Bold", 16), text_color="white")
+    quantity_display.pack(side="left", padx=(0, 10))
+
+    plus_button = CTkButton(quantity_frame, text="+", width=30, command=increase_quantity)
+    plus_button.pack(side="left")
 
     # Champs pour le prix
-    CTkLabel(master=fields_frame, text="Prix", font=("Arial Bold", 17), text_color="white").pack(anchor="nw", pady=(10, 0), padx=27)
-    price_entry = CTkEntry(master=fields_frame, fg_color="white", text_color=TEXT_COLOR, corner_radius=8)
-    price_entry.pack(fill="x", pady=(5, 10), padx=27)
+    price_entry = create_entry_field("Prix", 11)
+
+    # Champs Min/Max
+    min_max_frame = CTkFrame(fields_frame, fg_color="transparent")
+    min_max_frame.grid(row=13, column=0, columnspan=2, sticky="ew", padx=20, pady=(5, 10))
+
+    min_label = CTkLabel(min_max_frame, text="Minimum", font=("Arial Bold", 17), text_color="white")
+    min_label.pack(anchor="w", pady=(10, 0))
+
+    min_entry = CTkEntry(min_max_frame, fg_color="white", text_color="black", corner_radius=8)
+    min_entry.pack(fill="x", pady=(5, 10))
+
+    max_label = CTkLabel(min_max_frame, text="Maximum", font=("Arial Bold", 17), text_color="white")
+    max_label.pack(anchor="w", pady=(10, 0))
+
+    max_entry = CTkEntry(min_max_frame, fg_color="white", text_color="black", corner_radius=8)
+    max_entry.pack(fill="x", pady=(5, 10))
 
     # Bouton "Créer"
     def handle_create():
-        """Récupère les valeurs saisies et appelle la fonction cree_prod."""
         nom = nom_entry.get()
         ref = ref_entry.get()
         categorie = category_menu.get()
         fournisseur = supplier_menu.get()
         quantite = quantity_var.get()
         prix = price_entry.get()
+        min_val = min_entry.get()
+        max_val = max_entry.get()
 
         try:
-            prix = float(prix)  # Convertir le prix en float
+            prix = float(prix)
+            min_val = int(min_val)
+            max_val = int(max_val)
         except ValueError:
-            print("Erreur : Le prix doit être un nombre valide.")
-            label_status.configure(text=f"Erreur : Le prix doit être un nombre valide.", text_color="red")
+            label_status.configure(text="Erreur : Vérifiez les valeurs", text_color="red")
             return
 
-        # Appel de la fonction cree_prod
-        cree_prod(nom, ref, categorie, fournisseur, quantite, prix)
-        if cree_prod:
-            label_status.configure(text=f"Produit : {nom} créé", text_color="green")
+        cree_prod(nom, ref, categorie, fournisseur, quantite, prix, min_val, max_val)
 
+        label_status.configure(text=f"Produit {nom} créé", text_color="blue")
 
-
-        # Réinitialisation des champs après la création
+        # Réinitialisation des champs
         nom_entry.delete(0, tkinter.END)
         ref_entry.delete(0, tkinter.END)
-        category_menu.set("SILICONE")
-        supplier_menu.set("WURTH")
+        category_menu.set(categories[0])
+        supplier_menu.set(fournisseurs[0])
         quantity_var.set(1)
         price_entry.delete(0, tkinter.END)
+        min_entry.delete(0, tkinter.END)
+        max_entry.delete(0, tkinter.END)
 
 
-    CTkButton(master=fields_frame, text="Créer", font=("Arial Bold", 17), command=handle_create, fg_color=HIGHLIGHT_COLOR, text_color="white", hover_color="#207244").pack(side="right", pady=(20, 10), padx=27)
+    create_button = CTkButton(fields_frame, text="Créer", font=("Arial Bold", 17), command=handle_create, fg_color="green", text_color="white", corner_radius=10, height=40)
+    create_button.grid(row=15, column=1, padx=20, pady=(20, 20), sticky="e")
 
-    label_status = CTkLabel(master=fields_frame, text="", font=("Arial", 24, "bold"), text_color="#00ff27", fg_color="transparent")
-    label_status.pack(pady=(5, 15))
-
+    label_status = CTkLabel(fields_frame, text="", font=("Arial", 16), text_color="#00ff27", fg_color="transparent", bg_color="transparent")
+    label_status.grid(row=15, column=0, columnspan=2, pady=(5, 15), sticky="")
 
 def get_produits_scannes_cc():
     global produits_scannes

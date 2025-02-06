@@ -2,6 +2,7 @@ from tkinter import *
 from CTkTable import *
 import threading
 import time
+from queue import Queue
 import customtkinter as ctk
 from customtkinter import *
 from functools import partial
@@ -13,6 +14,7 @@ HEADER_BG = "#2A8C55"
 TEXT_COLOR = "#333333"
 HIGHLIGHT_COLOR = "#2A8C55"
 
+
 def show_commande(main_view):
     global table_frame
 
@@ -22,10 +24,8 @@ def show_commande(main_view):
     for widget in main_view.winfo_children():
         widget.destroy()
 
-    # Cadre central pour la barre de chargement (sans pack, pour éviter le décalage)
+    # Cadre central pour la barre de chargement
     loading_frame = CTkFrame(main_view, fg_color="transparent")
-
-    # Centrage absolu du cadre
     loading_frame.place(relx=0.5, rely=0.5, anchor="center")
 
     loading_label = CTkLabel(loading_frame, text="Chargement...", font=("Arial", 18), text_color="gray")
@@ -35,37 +35,51 @@ def show_commande(main_view):
     loading_bar.pack(pady=10)
     loading_bar.start()
 
+    # Utilisation de queue pour sécuriser la transmission des données
+    data_queue = Queue()
+
     def load_data():
         start_time = time.time()
 
-        commandes = list_command()
-        commandes_info = recup_commandes_info(commandes)
+        try:
+            commandes = list_command()
+            commandes_info = recup_commandes_info(commandes)
+        except Exception as e:
+            commandes_info = []
+            print(f"❌ Erreur lors du chargement des commandes: {e}")
 
         end_time = time.time()
         print(f"✅ Commandes chargées en {end_time - start_time:.2f} secondes.")
 
-        # Mise à jour de l'UI après chargement
-        main_view.after(0, lambda: display_commandes(main_view, commandes_info, loading_frame))
+        # Mettre les données dans la file d'attente
+        data_queue.put(commandes_info)
+
+        # Mettre à jour l'UI après chargement
+        main_view.after(100, lambda: display_commandes(main_view, data_queue, loading_frame))
 
     # Charger les commandes en arrière-plan
-    thread = threading.Thread(target=load_data)
+    thread = threading.Thread(target=load_data, daemon=True)
     thread.start()
 
 
-def display_commandes(main_view, commandes_info, loading_frame):
-    # Supprimer la barre de chargement après le chargement
+def display_commandes(main_view, data_queue, loading_frame):
+    commandes_info = data_queue.get()
+
+    # Supprimer la barre de chargement
     loading_frame.destroy()
 
-    # Cadre principal pour l'affichage final (s'assure que le tableau remplit bien l'espace)
+    # Affichage d'un message si aucune commande trouvée
+    if not commandes_info:
+        no_data_label = CTkLabel(main_view, text="Aucune commande trouvée.", font=("Arial", 18), text_color="red")
+        no_data_label.place(relx=0.5, rely=0.5, anchor="center")
+        return
+
+    # Cadre principal pour l'affichage des commandes
     content_frame = CTkFrame(main_view, fg_color="transparent")
     content_frame.pack(expand=True, fill="both")
 
     info_frame = CTkFrame(content_frame, fg_color=BG_COLOR, corner_radius=15)
     info_frame.pack(fill="x", padx=20, pady=10)
-
-    if not commandes_info:
-        print("⚠️ Aucune commande trouvée.")
-        return
 
     # Infos générales
     info_labels = [
@@ -95,8 +109,6 @@ def display_commandes(main_view, commandes_info, loading_frame):
     table_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
     update_command_table(commandes_info, table_frame, main_view)
-
-
 
 
 def create_table_headers(header_frame):

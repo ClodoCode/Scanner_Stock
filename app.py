@@ -189,7 +189,7 @@ class Application(CTk):
 
         role_permissions = {
             "administrateur": ["users", "reduire", "ajouter", "creer", "commande", "produit", "settings"],
-            "utilisateur": ["reduire", "ajouter", "creer", "produit", "settings"],
+            "utilisateur": ["reduire", "ajouter", "creer", "commande", "produit", "settings"],
             "invite": ["reduire", "ajouter"]
         }
 
