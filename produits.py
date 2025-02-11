@@ -2,6 +2,8 @@ from tkinter import *
 from customtkinter import *
 from functools import partial  # Pour utiliser partial
 from fonction import list_produit, plus_list_prod, moins_list_prod, crea_command, envoie_msg_command
+import time
+import threading
 
 # Couleurs modernes
 BG_COLOR = "#4b5e61"
@@ -9,140 +11,151 @@ HEADER_BG = "#2A8C55"
 TEXT_COLOR = "#333333"
 HIGHLIGHT_COLOR = "#2A8C55"
 
-
-# Dictionnaires pour suivre les produits scannés et leurs images
 scanned_products = {}
+list_rea = []
 
 def show_all_products(main_view, username):
-    global table_frame, username_la, filter_supplier, filter_category, list_rea
-
+    """Affiche tous les produits avec chargement optimisé."""
+    global table_frame, username_la, filter_supplier, filter_category, list_rea, loading_in_progress
     username_la = username
 
-    # Effacer les widgets existants dans la vue principale
+    # Supprimer les anciens widgets
     for widget in main_view.winfo_children():
         widget.destroy()
 
-    # Récupérer la liste des produits
-    produits = list_produit()
+    # Définir les filtres globaux
+    filter_supplier = StringVar(value="Tous")
+    filter_category = StringVar(value="Tous")
 
-    scanned_products.clear()
-    for p in produits:
-        scanned_products[p["id"]] = p
-
-    list_rea = []
-    for p in produits:
-        try:
-            qte = int(p["qte"])
-            mini = int(p["mini"])
-            if qte <= mini:
-                list_rea.append(p)
-        except ValueError:
-            # Si la conversion échoue, tu peux ignorer l'élément ou traiter l'erreur
-            print(f"Erreur de conversion pour le produit : {p}")
-
-    # Barre de recherche
+    # Barre de recherche + Filtrage
     search_frame = CTkFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
     search_frame.pack(fill="x", padx=20, pady=10)
 
     search_entry = CTkEntry(search_frame, placeholder_text="Rechercher un produit...", width=300)
     search_entry.pack(side="left", padx=10, pady=10)
 
-    search_entry.bind("<Return>", lambda event: search_product(search_entry.get(), table_frame))
     search_button = CTkButton(search_frame, text="Rechercher", command=lambda: search_product(search_entry.get(), table_frame))
     search_button.pack(side="left", padx=10)
 
-    search_button = CTkButton(search_frame, text="Produits à commander", command=lambda: afficher_rea(list_rea, table_frame, username_la))
-    search_button.pack(side="left", padx=10)
+    prod_rea_button = CTkButton(search_frame, text="Produits à commander", command=lambda: afficher_rea(list_rea, table_frame, username_la))
+    prod_rea_button.pack(side="left", padx=10)
 
-    # Bloc d'informations générales
+    refresh_button = CTkButton(search_frame, text="🔄 Actualiser", command=lambda: load_products(main_view, table_frame, True))
+    refresh_button.pack(side="right", padx=10)
+
+    # Zone des informations
     info_frame = CTkFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
     info_frame.pack(fill="x", padx=20, pady=10)
 
-    # Informations (placeholders)
     info_labels = [
-        ("Total Produits", len(produits) if produits else 0),
-        ("Nombre Fournisseurs", len(set(p["fournisseur"] for p in produits))),
-        ("Catégories", len(set(p["categorie"] for p in produits))),
-        ("Produits à commander", len(list_rea)),
-        ("Articles en Rupture", sum(1 for p in produits if p["qte"] == 0))
+        ("Total Produits", "0"),
+        ("Nombre Fournisseurs", "0"),
+        ("Catégories", "0"),
+        ("Produits à commander", "0"),
+        ("Articles en Rupture", "0")
     ]
+    
+    info_blocks = []
+    for label, value in info_labels:
+        block = CTkFrame(info_frame, fg_color="#FFFFFF", corner_radius=10, width=120, height=80)
+        block.pack(side="left", padx=10, pady=10, expand=True, fill="both")
+        value_label = CTkLabel(block, text=str(value), font=("Arial Bold", 25), text_color=HIGHLIGHT_COLOR)
+        value_label.pack(pady=5)
+        CTkLabel(block, text=label, font=("Arial", 20), text_color=TEXT_COLOR).pack()
+        info_blocks.append(value_label)  # Stocker les labels pour MAJ plus tard
 
-    for i, (label, value) in enumerate(info_labels):
-        info_block = CTkFrame(info_frame, fg_color="#FFFFFF", corner_radius=10, width=120, height=80)
-        info_block.pack(side="left", padx=10, pady=10, expand=True, fill="both")
-        CTkLabel(info_block, text=str(value), font=("Arial Bold", 25), text_color=HIGHLIGHT_COLOR).pack(pady=5)
-        CTkLabel(info_block, text=label, font=("Arial", 20), text_color=TEXT_COLOR).pack()
-
-    # Bloc pour afficher les produits avec scrollbar
+    # Zone de scroll pour la liste des produits
     scrollable_frame = CTkScrollableFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
     scrollable_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-    # Tableau des produits
     table_frame = CTkFrame(scrollable_frame, fg_color="#FFFFFF", corner_radius=15)
     table_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # Créer les en-têtes
-    filter_supplier = StringVar(value="Tous")
-    filter_category = StringVar(value="Tous")
+    # ✅ Charger les produits UNE SEULE FOIS pour éviter les répétitions
+    if not loading_in_progress:
+        loading_in_progress = True
+        threading.Thread(target=load_products, args=(main_view, table_frame, info_blocks), daemon=True).start()
+
+
+def load_products(main_view, table_frame, info_blocks=None, force_reload=False):
+    """Charge les produits en arrière-plan avec affichage progressif et évite les doublons."""
+    global scanned_products, list_rea, loading_in_progress
+
+    # Charger les produits depuis la base de données
+    produits = list_produit()
+    scanned_products.clear()
+    
+    for p in produits:
+        scanned_products[p["id"]] = p
+
+    # Déterminer les produits à commander
+    list_rea = [p for p in produits if int(p["qte"]) < int(p["mini"])]
+
+    # Mettre à jour les infos générales
+    if info_blocks:
+        info_blocks[0].configure(text=str(len(produits)))  # Total Produits
+        info_blocks[1].configure(text=str(len(set(p["fournisseur"] for p in produits))))  # Fournisseurs
+        info_blocks[2].configure(text=str(len(set(p["categorie"] for p in produits))))  # Catégories
+        info_blocks[3].configure(text=str(len(list_rea)))  # Produits à commander
+        info_blocks[4].configure(text=str(sum(1 for p in produits if int(p["qte"]) == 0)))  # Ruptures
+
+    # Supprimer l'ancien contenu
+    for widget in table_frame.winfo_children():
+        widget.destroy()
+
+    # Créer les en-têtes avec la colonne "Actions" bien dimensionnée
     create_table_headers(table_frame, produits)
 
-    # Ajouter les produits dans la liste
-    update_product_table(produits, table_frame, username_la)
+    # Charger les produits en lots pour éviter les blocages
+    def load_batch(start=0, batch_size=15):
+        end = min(start + batch_size, len(produits))
+        update_product_table(produits[start:end], table_frame, username_la)
+
+        if end < len(produits):
+            main_view.after(50, load_batch, end)  # Chargement progressif
+        else:
+            loading_in_progress = False  # ✅ Définir comme terminé
+
+    # Lancer le chargement progressif
+    main_view.after(50, load_batch, 0)
+
 
 
 def create_table_headers(table_frame, products):
     """Crée les en-têtes de colonnes pour la table des produits avec un bandeau gris clair."""
-    headers = ["Nom", "Réf", "Fournisseur", "Catégorie", "Quantité", "Actions"]
+    global filter_supplier, filter_category  # Ajout de cette ligne
+
+    headers = ["Nom", "Réf", "Fournisseur", "Catégorie", "Qte", "Actions"]
     suppliers = ["Tous"] + sorted(set(p["fournisseur"] for p in products))
     categories = ["Tous"] + sorted(set(p["categorie"] for p in products))
 
-    # Ajouter un bandeau gris clair sous les en-têtes (en utilisant un Label)
+    # Ajouter un bandeau gris clair sous les en-têtes
     header_bg_label = CTkLabel(
         table_frame,
-        text=" " * 100,  # L'important est de faire un label large
-        fg_color="#d3d3d3",  # Fond gris clair
-        width=10000,  # Largeur importante pour couvrir toute la zone
-        height=30  # Hauteur de la ligne d'en-tête
+        text=" " * 100,
+        fg_color="#d3d3d3",
+        width=10000,
+        height=30
     )
     header_bg_label.grid(row=0, column=0, columnspan=len(headers), sticky="nsew")
 
     # Configurer les colonnes
     for col, header in enumerate(headers):
-        if header == "Actions":
-            table_frame.grid_columnconfigure(col, minsize=70, weight=0)  # Largeur fixe pour Actions
-        else:
-            table_frame.grid_columnconfigure(col, weight=1)  # Colonnes extensibles pour les autres
+        table_frame.grid_columnconfigure(col, weight=1)
 
-        # Ajouter les cadres d'en-tête avec fond transparent
-        header_frame = CTkFrame(
-            table_frame,
-            fg_color="transparent",  # Transparent pour laisser voir le fond gris clair
-            corner_radius=8
-        )
+        header_frame = CTkFrame(table_frame, fg_color="transparent", corner_radius=8)
         header_frame.grid(row=0, column=col, padx=5, pady=5, sticky="nsew")
         header_frame.tag = "header"
 
         # Ajouter les menus déroulants pour Fournisseur et Catégorie
         if header == "Fournisseur":
-            filter_menu = CTkOptionMenu(
-                header_frame, values=suppliers, variable=filter_supplier,
-                command=lambda _: filter_products()
-            )
+            filter_menu = CTkOptionMenu(header_frame, values=suppliers, variable=filter_supplier, command=lambda _: filter_products())
             filter_menu.pack(fill="x", padx=5, pady=5)
         elif header == "Catégorie":
-            filter_menu = CTkOptionMenu(
-                header_frame, values=categories, variable=filter_category,
-                command=lambda _: filter_products()
-            )
+            filter_menu = CTkOptionMenu(header_frame, values=categories, variable=filter_category, command=lambda _: filter_products())
             filter_menu.pack(fill="x", padx=5, pady=5)
         else:
-            # Ajouter une étiquette pour les autres colonnes
-            header_label = CTkLabel(
-                header_frame,
-                text=header,
-                font=("Arial Bold", 20),
-                text_color="#333333"  # Couleur du texte foncé pour contraster avec le gris clair
-            )
+            header_label = CTkLabel(header_frame, text=header, font=("Arial Bold", 20), text_color="#333333")
             header_label.pack(padx=10, pady=10)
 
 

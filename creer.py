@@ -84,8 +84,15 @@ def crea_prod(main_view):
     ref_entry = create_entry_field("Référence Produit", 3)
 
     # Menus déroulants
-    categories = ["BUSE", "CALE", "CHEVILLE", "CLIENT", "COFFRET", "CONSOMMABLE", "DISQUE", "ELECTRICITE", "EMBOUT"]
-    fournisseurs = ["SOMFY", "AMAZON", "MANO MANO", "FOUSSIER", "WURTH"]
+    categories = ["BUSE", "CALE", "CHEVILLE", "CLIENT", "COFFRET", "CONSOMMABLE", "DISQUE", "ELECTRICITE", "EMBOUT", "ENTREE D AIR",
+                    "FÊNETRE", "FORET", "HABILLAGE", "LAMES", "MACHINE", "MOUSSE PU", "NETTOYAGE", "PROTECTION", "NON STOCKÉ", "OUTILLAGE A MAIN", 
+                    "POIGNÉE", "SCELLEMENT CHIMIQUE", "SCOTCH", "SECURITE", "SILICONE", "SPÉCIAL", "TELECOMMANDE", "VÉHICULES", "VETEMENT", "VISSERIE", "VMC", 
+                    "VOLET BATTANT", "VOLET ROULANT", "MOTEUR"]
+
+    fournisseurs = ["AMAZON", "BERNER", "BIPA", "BRICOZOR", "BUBENDORFF", "COGEFERM", "COPRODEX", "EUROMATIK", "FORUM DU BATIMENT",
+                        "FOUSSIER", "FRANCIAFLEX", "ILLBRUCK", "KLINE", "KLOSE BESSER", "LARIVIERE", "LEGRAND", "LEROY MERLIN", "MANO MANO",
+                        "PREFAL", "RABONI", "RECA", "SOMFY", "VALENTE", "VDS", "WURTH"]
+
 
     category_label = CTkLabel(fields_frame, text="Catégorie", font=("Arial Bold", 17), text_color="white")
     category_label.grid(row=5, column=0, sticky="w", padx=20, pady=(10, 0))
@@ -99,7 +106,6 @@ def crea_prod(main_view):
     supplier_menu = CTkOptionMenu(fields_frame, values=fournisseurs, fg_color="white", text_color="black", corner_radius=8)
     supplier_menu.grid(row=8, column=0, columnspan=2, sticky="ew", padx=20, pady=(5, 10))
 
-    # Quantité avec boutons + et -
     quantity_label = CTkLabel(fields_frame, text="Quantité", font=("Arial Bold", 17), text_color="white")
     quantity_label.grid(row=9, column=0, sticky="w", padx=20, pady=(10, 0))
 
@@ -107,7 +113,7 @@ def crea_prod(main_view):
     quantity_frame.grid(row=10, column=0, columnspan=2, sticky="ew", padx=20, pady=(5, 10))
 
     quantity_var = tkinter.IntVar(value=1)
-    
+
     def increase_quantity():
         quantity_var.set(quantity_var.get() + 1)
 
@@ -115,36 +121,41 @@ def crea_prod(main_view):
         if quantity_var.get() > 0:
             quantity_var.set(quantity_var.get() - 1)
 
+    # Bouton -
     minus_button = CTkButton(quantity_frame, text="-", width=30, command=decrease_quantity)
-    minus_button.pack(side="left", padx=(0, 10))
+    minus_button.grid(row=0, column=0, padx=(0, 10))
 
+    # Affichage quantité
     quantity_display = CTkLabel(quantity_frame, textvariable=quantity_var, font=("Arial Bold", 16), text_color="white")
-    quantity_display.pack(side="left", padx=(0, 10))
+    quantity_display.grid(row=0, column=1, padx=(0, 10))
 
+    # Bouton +
     plus_button = CTkButton(quantity_frame, text="+", width=30, command=increase_quantity)
-    plus_button.pack(side="left")
+    plus_button.grid(row=0, column=2, padx=(0, 20))
 
-    # Champs pour le prix
-    price_entry = create_entry_field("Prix", 11)
+    # Champ Min
+    min_label = CTkLabel(quantity_frame, text="Min", font=("Arial Bold", 17), text_color="white")
+    min_label.grid(row=0, column=3, padx=(10, 5))
 
-    # Champs Min/Max
-    min_max_frame = CTkFrame(fields_frame, fg_color="transparent")
-    min_max_frame.grid(row=13, column=0, columnspan=2, sticky="ew", padx=20, pady=(5, 10))
+    min_entry = CTkEntry(quantity_frame, width=50, fg_color="white", text_color="black", corner_radius=8)
+    min_entry.grid(row=0, column=4, padx=(0, 10))
 
-    min_label = CTkLabel(min_max_frame, text="Minimum", font=("Arial Bold", 17), text_color="white")
-    min_label.pack(anchor="w", pady=(10, 0))
+    # Champ Max
+    max_label = CTkLabel(quantity_frame, text="Max", font=("Arial Bold", 17), text_color="white")
+    max_label.grid(row=0, column=5, padx=(10, 5))
 
-    min_entry = CTkEntry(min_max_frame, fg_color="white", text_color="black", corner_radius=8)
-    min_entry.pack(fill="x", pady=(5, 10))
+    max_entry = CTkEntry(quantity_frame, width=50, fg_color="white", text_color="black", corner_radius=8)
+    max_entry.grid(row=0, column=6, padx=(0, 10))
 
-    max_label = CTkLabel(min_max_frame, text="Maximum", font=("Arial Bold", 17), text_color="white")
-    max_label.pack(anchor="w", pady=(10, 0))
+    price_label = CTkLabel(fields_frame, text="Prix", font=("Arial Bold", 17), text_color="white")
+    price_label.grid(row=11, column=0, sticky="w", padx=20, pady=(10, 0))
 
-    max_entry = CTkEntry(min_max_frame, fg_color="white", text_color="black", corner_radius=8)
-    max_entry.pack(fill="x", pady=(5, 10))
+    price_entry = CTkEntry(fields_frame, fg_color="white", text_color="black", corner_radius=8)
+    price_entry.grid(row=12, column=0, columnspan=2, sticky="ew", padx=20, pady=(5, 10))
+
 
     # Bouton "Créer"
-    def handle_create():
+    def handle_create(event=None):
         nom = nom_entry.get()
         ref = ref_entry.get()
         categorie = category_menu.get()
@@ -182,6 +193,13 @@ def crea_prod(main_view):
 
     label_status = CTkLabel(fields_frame, text="", font=("Arial", 16), text_color="#00ff27", fg_color="transparent", bg_color="transparent")
     label_status.grid(row=15, column=0, columnspan=2, pady=(5, 15), sticky="")
+
+    nom_entry.bind("<Return>", handle_create)
+    ref_entry.bind("<Return>", handle_create)
+    price_entry.bind("<Return>", handle_create)
+    min_entry.bind("<Return>", handle_create)
+    max_entry.bind("<Return>", handle_create)
+
 
 def get_produits_scannes_cc():
     global produits_scannes

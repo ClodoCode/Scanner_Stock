@@ -6,7 +6,7 @@ from dashboard import show_dashboard
 from sortie import show_sortie, handle_scan_reduire, get_produits_scannes_r
 from entree import show_entree, handle_scan_entree, get_produits_scannes_a
 from fonction import load_users_from_json
-from produits import show_all_products
+from produits_v2 import show_all_products
 from commande import show_commande
 from creer import show_creer, handle_scan_cree_command, get_produits_scannes_cc, get_scan_ok
 from users import show_users

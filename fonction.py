@@ -42,12 +42,17 @@ def get_produit_info(produit_id):
         fournisseur_produit = fields.get("Fournisseur", "Fournisseur inconnu")
         qte_produit = fields.get("codeb_qte", "Qte inconnu")
 
+        # Récupérer la photo
+        photos = fields.get("Photo", [])
+        photo_url = photos[0]["url"] if photos else None 
+
         return {
             "id": produit_id,  # Ajout de l'ID pour le tableau
             "nom": nom_produit,
             "categorie": categorie_produit,
             "fournisseur": fournisseur_produit,
             "qte": qte_produit,
+            "photo": photo_url,
         }
     else:
         print(f"Erreur {response.status_code} lors de la récupération du produit : {response.text}")
@@ -158,6 +163,29 @@ def add_record_ajouter_to_airtable_gestion(produit_id, qte_scan, username):
         print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
         return False
 
+def add_recption_cde(produit_id, qte):
+    """Ajoute un enregistrement dans la table gestion."""
+    produit_inf = get_produit_info(produit_id)
+    print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : {qte}")
+    
+    data = {
+        "fields": {
+            "Produits": [produit_id],
+            "Action": "Ajouter",
+            "Référence" : "Reception commande",
+            "Emplacement" : "STOCK",
+            "Qté Stock": qte,
+        }
+    }
+
+    response = requests.post(BASE_URL_GESTION, headers=HEADERS, json=data)
+
+    if response.status_code == 200:
+        print("Enregistrement créé avec succès dans la table gestion.")
+        return True
+    else:
+        print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
+        return False
 
 def plus_list_prod(produit_id, username):
     """Ajoute un enregistrement dans la table gestion."""
@@ -238,39 +266,48 @@ def list_produit_rea():
         print(f"Erreur {response.status_code} : {response.text}")
         return None
 
-
 def list_produit():
-
     url = f"{BASE_URL_PRODUIT}"
     params = {"view": "Favoris"}
-    response = requests.get(url, headers=HEADERS, params=params)
+    produits = []
+    offset = None  # Variable pour stocker l'offset
 
-    
-    if response.status_code == 200:
-        data = response.json()
-        records = data.get("records", [])  # Liste des enregistrements
+    while True:
+        if offset:
+            params["offset"] = offset  # Ajouter l'offset si présent
 
-        # Construire une liste des produits
-        produits = []
-        for record in records:
-            fields = record.get("fields", {})  # Récupérer les champs du produit
+        response = requests.get(url, headers=HEADERS, params=params)
 
-            produit = {
-                "nom": fields.get("Nom", "Nom inconnu"),
-                "ref": fields.get("Référence", "Référence inconnue"),
-                "categorie": fields.get("Catégorie", "Catégorie inconnue"),
-                "fournisseur": fields.get("Fournisseur", "Fournisseur inconnu"),
-                "qte": fields.get("Qté Stock (Réel)", "Qte inconnue"),
-                "id": fields.get("TheId", "ID inconnue"),
-                "mini": fields.get("Minimum", "Pas de minimum"),
-                "max": fields.get("Maximum", "Pas de maximum")
-            }
-            produits.append(produit)
+        if response.status_code == 200:
+            data = response.json()
+            records = data.get("records", [])  # Liste des enregistrements
 
-        return produits
-    else:
-        print(f"Erreur {response.status_code} : {response.text}")
-        return None
+            for record in records:
+                fields = record.get("fields", {})
+
+                produit = {
+                    "nom": fields.get("Nom", "Nom inconnu"),
+                    "ref": fields.get("Référence", "Référence inconnue"),
+                    "categorie": fields.get("Catégorie", "Catégorie inconnue"),
+                    "fournisseur": fields.get("Fournisseur", "Fournisseur inconnu"),
+                    "qte": fields.get("Qté Stock (Réel)", "Qte inconnue"),
+                    "id": fields.get("TheId", "ID inconnue"),
+                    "mini": fields.get("Minimum", "Pas de minimum"),
+                    "max": fields.get("Maximum", "Pas de maximum"),
+                    "photo": fields.get("Photo", [{}])[0].get("url", None),
+
+                }
+                produits.append(produit)
+
+            # Vérifier s'il y a une pagination
+            offset = data.get("offset")
+            if not offset:  # Si plus d'offset, on sort de la boucle
+                break
+        else:
+            print(f"Erreur {response.status_code} : {response.text}")
+            return None
+
+    return produits
 
 def list_command():
 

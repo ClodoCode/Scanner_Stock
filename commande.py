@@ -6,7 +6,7 @@ from queue import Queue
 import customtkinter as ctk
 from customtkinter import *
 from functools import partial
-from fonction import list_command, get_produit_info, confirm_command
+from fonction import list_command, get_produit_info, confirm_command, add_recption_cde
 
 # Couleurs modernes
 BG_COLOR = "#4b5e61"
@@ -16,7 +16,7 @@ HIGHLIGHT_COLOR = "#2A8C55"
 
 
 def show_commande(main_view):
-    global table_frame
+    """Affiche les commandes et permet de filtrer entre complètes et incomplètes sans rechargement."""
 
     print("⏳ Chargement des commandes...")
 
@@ -24,210 +24,275 @@ def show_commande(main_view):
     for widget in main_view.winfo_children():
         widget.destroy()
 
-    # Cadre central pour la barre de chargement
-    loading_frame = CTkFrame(main_view, fg_color="transparent")
-    loading_frame.place(relx=0.5, rely=0.5, anchor="center")
+    # --- Conteneur principal ---
+    content_frame = CTkFrame(main_view, fg_color="transparent")
+    content_frame.pack(expand=True, fill="both")
 
-    loading_label = CTkLabel(loading_frame, text="Chargement...", font=("Arial", 18), text_color="gray")
-    loading_label.pack(pady=10)
+    # --- Boutons de sélection ---
+    button_frame = CTkFrame(content_frame, fg_color=BG_COLOR, corner_radius=15)
+    button_frame.pack(fill="x", padx=20, pady=10)
 
-    loading_bar = CTkProgressBar(loading_frame, mode="indeterminate", width=200, height=10)
-    loading_bar.pack(pady=10)
-    loading_bar.start()
+    info_frame = CTkFrame(content_frame, fg_color="transparent")  # Cadre pour afficher les infos
+    commandes_frame = CTkFrame(content_frame, fg_color="transparent")
 
-    # Utilisation de queue pour sécuriser la transmission des données
-    data_queue = Queue()
+    info_frame.pack(fill="x", padx=20, pady=10)  # On met les infos au-dessus
+    commandes_frame.pack(expand=True, fill="both", padx=20, pady=10)
 
-    def load_data():
-        start_time = time.time()
+    # --- Stockage des commandes en mémoire ---
+    commandes_info = []
 
-        try:
-            commandes = list_command()
-            commandes_info = recup_commandes_info(commandes)
-        except Exception as e:
-            commandes_info = []
-            print(f"❌ Erreur lors du chargement des commandes: {e}")
+    def load_data(force_reload=False):
+        """Charge les commandes UNE SEULE FOIS au premier affichage, sauf si actualisation."""
+        print(f"⏳ Chargement des commandes en mémoire...")
 
-        end_time = time.time()
-        print(f"✅ Commandes chargées en {end_time - start_time:.2f} secondes.")
+        # Supprimer les commandes existantes uniquement si c'est une actualisation
+        if force_reload:
+            for widget in commandes_frame.winfo_children():
+                widget.destroy()
+            for widget in info_frame.winfo_children():
+                widget.destroy()
 
-        # Mettre les données dans la file d'attente
-        data_queue.put(commandes_info)
+        # Affichage du chargement
+        loading_label = CTkLabel(commandes_frame, text="Chargement...", font=("Arial", 18), text_color="gray")
+        loading_label.pack(pady=10)
 
-        # Mettre à jour l'UI après chargement
-        main_view.after(100, lambda: display_commandes(main_view, data_queue, loading_frame))
+        def fetch_data():
+            nonlocal commandes_info
+            try:
+                commandes = list_command()
+                commandes_info = recup_commandes_info(commandes)
+            except Exception as e:
+                commandes_info = []
+                print(f"❌ Erreur lors du chargement des commandes: {e}")
 
-    # Charger les commandes en arrière-plan
-    thread = threading.Thread(target=load_data, daemon=True)
-    thread.start()
+            main_view.after(100, lambda: display_filtered_commandes("incomplètes"))
+
+        threading.Thread(target=fetch_data, daemon=True).start()
+
+    def display_filtered_commandes(command_type):
+        """Affiche les commandes sélectionnées sans les recharger de la base de données."""
+        print(f"🔍 Filtrage des commandes {command_type}...")
+
+        # Supprimer les commandes existantes
+        for widget in commandes_frame.winfo_children():
+            widget.destroy()
+        for widget in info_frame.winfo_children():
+            widget.destroy()
+
+        # Filtrage local des commandes déjà chargées
+        filtered_commandes = [c for c in commandes_info if (c["status"] == "Complète") == (command_type == "complètes")]
+
+        if not filtered_commandes:
+            CTkLabel(commandes_frame, text="Aucune commande trouvée.", font=("Arial", 18), text_color="red").pack(pady=20)
+            return
+
+        # --- Affichage des infos seulement pour commandes incomplètes ---
+        if command_type == "incomplètes":
+            info_data = [
+                ("Total Commandes Incomplètes", len(filtered_commandes)),
+                ("Fournisseurs Uniques", len(set(c["fournisseur"] for c in filtered_commandes))),
+                ("Produits Totaux", sum(len(c.get("produits", [])) for c in filtered_commandes))
+            ]
+
+            info_frame.configure(fg_color=BG_COLOR)  # Appliquer la couleur de fond
+            for label, value in info_data:
+                block = CTkFrame(info_frame, fg_color="white", corner_radius=10, width=120, height=80)
+                block.pack(side="left", padx=10, pady=10, expand=True, fill="both")
+                CTkLabel(block, text=str(value), font=("Arial Bold", 25), text_color=HIGHLIGHT_COLOR).pack(pady=5)
+                CTkLabel(block, text=label, font=("Arial", 14), text_color=TEXT_COLOR).pack()
+        else:
+            # 🔥 Supprimer complètement le cadre des infos lorsqu'on affiche les commandes complètes
+            for widget in info_frame.winfo_children():
+                widget.destroy()
+            info_frame.pack_forget()
+
+        table_frame = CTkFrame(commandes_frame, fg_color="white", corner_radius=15)
+        table_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        update_command_table(filtered_commandes, table_frame, is_complete=(command_type == "complètes"))
+
+    # --- Création des boutons avec la nouvelle organisation ---
+    CTkButton(button_frame, text="🚨 Commandes Incomplètes", command=lambda: display_filtered_commandes("incomplètes")).pack(side="left", padx=10, pady=5, expand=True)
+    CTkButton(button_frame, text="🔄 Actualiser", command=lambda: load_data(force_reload=True)).pack(side="left", padx=10, pady=5, expand=True)
+    CTkButton(button_frame, text="📦 Commandes Complètes", command=lambda: display_filtered_commandes("complètes")).pack(side="right", padx=10, pady=5, expand=True)
+
+    # Charger les commandes UNE SEULE FOIS
+    load_data()
+
+
+
+
+
+def display_filtered_commandes(parent_frame, data_queue, loading_label):
+    """Affiche uniquement les commandes sélectionnées après le filtrage."""
+    commandes_info = data_queue.get()
+    loading_label.destroy()
+
+    if not commandes_info:
+        CTkLabel(parent_frame, text="Aucune commande trouvée.", font=("Arial", 18), text_color="red").pack(pady=20)
+        return
+
+    table_frame = CTkFrame(parent_frame, fg_color="white", corner_radius=15)
+    table_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+    update_command_table(commandes_info, table_frame, is_complete=(commandes_info[0]["status"] == "Complète"))
+
 
 
 def display_commandes(main_view, data_queue, loading_frame):
     commandes_info = data_queue.get()
-
-    # Supprimer la barre de chargement
     loading_frame.destroy()
 
-    # Affichage d'un message si aucune commande trouvée
     if not commandes_info:
-        no_data_label = CTkLabel(main_view, text="Aucune commande trouvée.", font=("Arial", 18), text_color="red")
-        no_data_label.place(relx=0.5, rely=0.5, anchor="center")
+        CTkLabel(main_view, text="Aucune commande trouvée.", font=("Arial", 18), text_color="red").place(relx=0.5, rely=0.5, anchor="center")
         return
 
-    # Cadre principal pour l'affichage des commandes
     content_frame = CTkFrame(main_view, fg_color="transparent")
     content_frame.pack(expand=True, fill="both")
+
+    # Infos générales
+    commandes_completes = [c for c in commandes_info if c["status"] == "Complète"]
+    commandes_incompletes = [c for c in commandes_info if c["status"] == "Incomplète"]
 
     info_frame = CTkFrame(content_frame, fg_color=BG_COLOR, corner_radius=15)
     info_frame.pack(fill="x", padx=20, pady=10)
 
-    # Infos générales
     info_labels = [
-        ("Commandes en cours", len(commandes_info)),
+        ("Total Commandes", len(commandes_info)),
         ("Fournisseurs uniques", len(set(c["fournisseur"] for c in commandes_info))),
         ("Produits totaux", sum(len(c.get("produits", [])) for c in commandes_info)),
-        ("Commandes en attente", sum(1 for c in commandes_info if c.get("status", "") == "Incomplète"))
+        ("Commandes Incomplètes", len(commandes_incompletes))
     ]
 
     for label, value in info_labels:
-        info_block = CTkFrame(info_frame, fg_color="#FFFFFF", corner_radius=10, width=120, height=80)
-        info_block.pack(side="left", padx=10, pady=10, expand=True, fill="both")
-        CTkLabel(info_block, text=str(value), font=("Arial Bold", 25), text_color=HIGHLIGHT_COLOR).pack(pady=5)
-        CTkLabel(info_block, text=label, font=("Arial", 20), text_color=TEXT_COLOR).pack()
+        block = CTkFrame(info_frame, fg_color="white", corner_radius=10, width=120, height=80)
+        block.pack(side="left", padx=10, pady=10, expand=True, fill="both")
+        CTkLabel(block, text=str(value), font=("Arial Bold", 25), text_color=HIGHLIGHT_COLOR).pack(pady=5)
+        CTkLabel(block, text=label, font=("Arial", 14), text_color=TEXT_COLOR).pack()
 
-    # Zone de défilement pour le tableau
-    scrollable_frame = CTkScrollableFrame(content_frame, fg_color=BG_COLOR, corner_radius=15)
+    scrollable_frame = CTkFrame(content_frame, fg_color=BG_COLOR, corner_radius=15)
     scrollable_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-    # Cadre pour les en-têtes
-    header_frame = CTkFrame(scrollable_frame, fg_color="#FFFFFF", corner_radius=15)
-    header_frame.pack(fill="x", padx=10, pady=5)
-    create_table_headers(header_frame)
+    if commandes_incompletes:
+        create_section(scrollable_frame, "📌 Commandes Incomplètes", commandes_incompletes)
 
-    # Cadre pour le contenu du tableau
-    table_frame = CTkFrame(scrollable_frame, fg_color="#FFFFFF", corner_radius=15)
-    table_frame.pack(fill="both", expand=True, padx=10, pady=10)
-
-    update_command_table(commandes_info, table_frame, main_view)
+    if commandes_completes:
+        create_section(scrollable_frame, "✅ Commandes Complètes", commandes_completes)
 
 
-def create_table_headers(header_frame):
-    headers = ["ID Commande", "Fournisseur", "Produits", "Commandé", "Reçus", "Statut", "Actions"]
+def create_section(parent, title, commandes):
+    """Crée une section avec barre de défilement et en-têtes dynamiques."""
+    section_frame = CTkFrame(parent, fg_color="white", corner_radius=15)
+    section_frame.pack(fill="both", padx=10, pady=5, expand=True)
 
-    # Configuration des colonnes pour éviter le décalage
+    section_label = CTkLabel(section_frame, text=title, font=("Arial Bold", 18), text_color="black")
+    section_label.pack(pady=10)
+
+    # Cadre avec barre de défilement
+    table_scroll_frame = CTkFrame(section_frame, fg_color="white", height=300)
+    table_scroll_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+    table_frame = CTkFrame(table_scroll_frame, fg_color="white", corner_radius=15)
+    table_frame.pack(fill="both", expand=True)
+
+    update_command_table(commandes, table_frame)
+
+
+def update_command_table(commandes, parent_frame, is_complete=False):
+    """Affichage optimisé des commandes avec en-têtes fixes et alignement parfait."""
+
+    # Supprimer le contenu existant
+    for widget in parent_frame.winfo_children():
+        widget.destroy()
+
+    headers = ["Produits", "Fournisseur", "Commandé", "Reçus", "Statut"]
+    if not is_complete:
+        headers.append("Actions")  # Ajout de la colonne Actions pour les commandes incomplètes
+
+    # --- Cadre principal du tableau ---
+    table_container = CTkFrame(parent_frame, fg_color="white")
+    table_container.pack(fill="both", expand=True, padx=10, pady=5)
+
+    # --- Création du cadre fixe pour les en-têtes ---
+    header_frame = CTkFrame(table_container, fg_color=HEADER_BG, corner_radius=10)
+    header_frame.pack(fill="x")
+
+    # ✅ Assurer une largeur uniforme pour toutes les colonnes
     for col in range(len(headers)):
         header_frame.grid_columnconfigure(col, weight=1, uniform="header")
 
-    # Création des en-têtes alignées
     for col, header in enumerate(headers):
-        header_label = CTkLabel(
-            header_frame,
-            text=header,
-            font=("Arial Bold", 14),
-            text_color="black",
-            fg_color="transparent",
-            width=150,  # Forcer une largeur uniforme
-            height=30
-        )
-        header_label.grid(row=0, column=col, padx=5, pady=5, sticky="nsew")
+        label = CTkLabel(header_frame, text=header, font=("Arial Bold", 16), text_color="white", anchor="center")
+        label.grid(row=0, column=col, padx=5, pady=5, sticky="nsew")
 
-    print("En-têtes créés et bien alignés.")
+    # --- Cadre pour les données ---
+    table_frame = CTkFrame(table_container, fg_color="white")
+    table_frame.pack(fill="both", expand=True)
 
+    # ✅ Uniformiser la structure des colonnes
+    for col in range(len(headers)):
+        table_frame.grid_columnconfigure(col, weight=1, uniform="row")
 
-
-
-def update_command_table(commandes, table_frame, main_view):
-    # Supprimer uniquement les anciennes lignes sans toucher aux en-têtes
-    for widget in table_frame.winfo_children():
-        widget.destroy()
-
-    if not commandes:
-        print("⚠️ Aucune commande à afficher.")
-        return
-
-    # Configuration des colonnes pour assurer un bon alignement
-    for col in range(7):  # 7 colonnes en tout
-        table_frame.grid_columnconfigure(col, weight=1, uniform="table")
-
+    # --- Ajout des lignes des commandes ---
     for row, commande in enumerate(commandes, start=1):
-
-        CTkLabel(table_frame, text=commande["num_cde"], font=("Arial", 16), text_color=TEXT_COLOR, anchor="center").grid(row=row, column=0, padx=5, pady=5, sticky="ew")
-        CTkLabel(table_frame, text=commande["fournisseur"], font=("Arial", 16), text_color=TEXT_COLOR, anchor="center").grid(row=row, column=1, padx=5, pady=5, sticky="ew")
-
         produits_noms = ", ".join([p.get("nom", "Produit inconnu") for p in commande.get("produits", [])])
-        CTkLabel(table_frame, text=produits_noms, font=("Arial", 16), text_color=TEXT_COLOR, anchor="center").grid(row=row, column=2, padx=5, pady=5, sticky="ew")
 
-        CTkLabel(table_frame, text=commande["qte_cde"], font=("Arial", 16), text_color=TEXT_COLOR, anchor="center").grid(row=row, column=3, padx=5, pady=5, sticky="ew")
+        CTkLabel(table_frame, text=produits_noms, font=("Arial", 14), text_color=TEXT_COLOR, anchor="center").grid(row=row, column=0, padx=5, pady=5, sticky="nsew")
+        CTkLabel(table_frame, text=commande["fournisseur"], font=("Arial", 14), text_color=TEXT_COLOR, anchor="center").grid(row=row, column=1, padx=5, pady=5, sticky="nsew")
+        CTkLabel(table_frame, text=str(commande["qte_cde"]), font=("Arial", 14), text_color=TEXT_COLOR, anchor="center").grid(row=row, column=2, padx=5, pady=5, sticky="nsew")
 
-        # Label mis à jour dynamiquement pour la quantité reçue
-        qte_recu_label = CTkLabel(table_frame, text=str(commande["qte_recu"]), font=("Arial", 16), text_color=TEXT_COLOR, anchor="center")
-        qte_recu_label.grid(row=row, column=4, padx=5, pady=5, sticky="ew")
+        qte_recu_label = CTkLabel(table_frame, text=str(commande["qte_recu"]), font=("Arial", 14), text_color=TEXT_COLOR, anchor="center")
+        qte_recu_label.grid(row=row, column=3, padx=5, pady=5, sticky="nsew")
 
-        CTkLabel(table_frame, text=commande["status"], font=("Arial", 16), text_color=TEXT_COLOR, anchor="center").grid(row=row, column=5, padx=5, pady=5, sticky="ew")
+        status_label = CTkLabel(table_frame, text=commande["status"], font=("Arial", 14), text_color=TEXT_COLOR, anchor="center")
+        status_label.grid(row=row, column=4, padx=5, pady=5, sticky="nsew")
 
-        qte_cde = int(commande.get("qte_cde", 0))
-        qte_recu = int(commande.get("qte_recu", 0))
-        qte_reception = qte_cde - qte_recu
+        # Bouton "Réceptionner" seulement pour les commandes incomplètes
+        if not is_complete:
+            action_frame = CTkFrame(table_frame, fg_color="transparent")
+            action_frame.grid(row=row, column=5, padx=5, pady=5, sticky="nsew")
 
-        # Bouton "Réceptionner"
-        action_frame = CTkFrame(table_frame, fg_color="transparent")
-        action_frame.grid(row=row, column=6, padx=5, pady=5, sticky="nsew")
+            CTkButton(
+                action_frame,
+                text="Réceptionner",
+                command=partial(button_reception, commande["id"], commande["produits"][0]["id"], commande["qte_cde"], qte_recu_label, status_label),
+            ).pack()
 
-        status_label = CTkLabel(table_frame, text=commande["status"], font=("Arial", 16), text_color=TEXT_COLOR)
-        status_label.grid(row=row, column=5, padx=5, pady=5, sticky="ew")
-
-        # Bouton "Réceptionner" avec passage de `status_label`
-        CTkButton(
-            action_frame, 
-            text="Réceptionner", 
-            width=100,  
-            command=partial(button_reception, commande["id"], qte_reception, qte_recu_label, status_label)
-        ).pack(anchor="center", padx=5)
 
 
 def recup_commandes_info(commandes):
+    """Récupère et structure les données des commandes."""
     commandes_info = []
     for command in commandes:
-        print(f"Traitement de la commande: {command}")  # Debugging
+        fournisseur = command.get("fournisseur", ["Inconnu"])
+        fournisseur = fournisseur[0] if isinstance(fournisseur, list) and fournisseur else "Inconnu"
 
-        if "Num cde" in command and "fournisseur" in command:  # Correction ici
-            fournisseur = command["fournisseur"]
-            if isinstance(fournisseur, list):  # Vérifier si c'est une liste
-                fournisseur = fournisseur[0] if fournisseur else "Inconnu"
+        produits = [get_produit_info(produit_id) or {"nom": "Produit inconnu"} for produit_id in command.get("Produits", [])]
+        
+        commandes_info.append({
+            "num_cde": command.get("Num cde", "NC"),
+            "fournisseur": fournisseur,
+            "produits": produits,
+            "status": command.get("status", "Non défini"),
+            "qte_cde": command.get("qte_command", "0"),
+            "qte_recu": command.get("qte_recu", "0"),
+            "id": command.get("id", "Pas d'ID")
+        })
 
-            command_info = {
-                "num_cde": command["Num cde"],
-                "fournisseur": fournisseur,  
-                "produits": [get_produit_info(produit_id) or {"nom": "Produit inconnu"} for produit_id in command.get("Produits", [])],
-                "status": command.get("status", "Non défini"),
-                "qte_cde": command.get("qte_command", "Pas de qte commandé"),
-                "qte_recu": command.get("qte_recu", "Pas de qte reçus"),
-                "id": command.get("id", "Pas d'ID")  # Correction ici
-            }
-            commandes_info.append(command_info)
-
+    commandes_info.sort(key=lambda c: c["produits"][0].get("nom", "ZZZZZ").lower())
     return commandes_info
 
-def button_reception(command_id, qte_reception, qte_recu_label, status_label):
+
+def button_reception(command_id, produit_id, qte_reception, qte_recu_label, status_label):
     def reception_task():
         if confirm_command(command_id, qte_reception):
-            print(f"✅ Commande {command_id} mise à jour avec {qte_reception} reçus.")
-
-            # Attendre pour s'assurer que la base de données a bien été mise à jour
+            add_recption_cde(produit_id, qte_reception)
             time.sleep(0.5)
 
-            # Mettre à jour directement les labels sans retraiter toutes les commandes
-            qte_recu_actuel = int(qte_recu_label.cget("text"))  # Récupère la valeur actuelle
-            qte_recu_nouveau = qte_recu_actuel + qte_reception  # Ajoute la réception
-
-            # Mettre à jour dynamiquement l'affichage
+            qte_recu_nouveau = int(qte_recu_label.cget("text")) + qte_reception
             qte_recu_label.configure(text=str(qte_recu_nouveau))
 
-            # Si la quantité reçue atteint la quantité commandée, on met le statut à "Complète"
-            if qte_recu_nouveau >= int(qte_recu_label.master.grid_slaves(row=qte_recu_label.grid_info()["row"], column=3)[0].cget("text")):
-                print(f"✅ Commande {command_id} maintenant Complète.")
+            if qte_recu_nouveau >= int(qte_reception):
                 status_label.configure(text="Complète")
 
-    # Exécuter la mise à jour en arrière-plan pour éviter de bloquer l'interface
-    thread = threading.Thread(target=reception_task)
-    thread.start()
+    threading.Thread(target=reception_task).start()
