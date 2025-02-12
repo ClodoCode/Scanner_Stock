@@ -187,43 +187,17 @@ def add_recption_cde(produit_id, qte):
         print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
         return False
 
-def plus_list_prod(produit_id, username):
+def mov_prod(produit_id, action, ref, qte, username):
     """Ajoute un enregistrement dans la table gestion."""
     produit_inf = get_produit_info(produit_id)
-    print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : 1")
     
     data = {
         "fields": {
             "Produits": [produit_id],
-            "Action": "Ajouter",
-            "Référence" : "Ajout Rapide",
+            "Action": action,
+            "Référence" : ref,
             "Emplacement" : "STOCK",
-            "Qté Stock": 1,
-            "Personne": username,
-        }
-    }
-
-    response = requests.post(BASE_URL_GESTION, headers=HEADERS, json=data)
-
-    if response.status_code == 200:
-        print("Enregistrement créé avec succès dans la table gestion.")
-        return True
-    else:
-        print(f"Erreur {response.status_code} lors de l'ajout à la table gestion : {response.text}")
-        return False
-
-def moins_list_prod(produit_id, username):
-    """Ajoute un enregistrement dans la table gestion."""
-    produit_inf = get_produit_info(produit_id)
-    print(f"Ajout du produit dans la table gestion : {produit_inf['nom']}, Quantité : 1")
-    
-    data = {
-        "fields": {
-            "Produits": [produit_id],
-            "Action": "Réduire",
-            "Référence" : "Sortie Rapide",
-            "Emplacement" : "STOCK",
-            "Qté Stock": -1,
+            "Qté Stock": qte,
             "Personne": username,
         }
     }

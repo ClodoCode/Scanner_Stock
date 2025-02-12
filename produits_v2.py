@@ -5,9 +5,10 @@ from functools import partial
 from PIL import Image, ImageTk
 import requests
 import time
+import threading
 from io import BytesIO
 from ctypes import windll
-from fonction import list_produit, plus_list_prod, moins_list_prod, crea_command, envoie_msg_command
+from fonction import list_produit, crea_command, envoie_msg_command, mov_prod
 
 # Couleurs modernes
 BG_COLOR = "#4b5e61"
@@ -373,6 +374,8 @@ def sort_by_column(tree, col, reverse):
 
 
 
+import time
+import threading
 
 def on_product_select(event):
     """Affiche une fenêtre contextuelle avec les détails du produit et sa photo."""
@@ -393,7 +396,8 @@ def on_product_select(event):
     # Créer la fenêtre popup
     popup = CTkToplevel()
     popup.title("Détails du produit")
-    popup.geometry("350x400")
+    popup.geometry("550x500")
+    popup.resizable(False, False)  # Empêcher le redimensionnement
 
     # Affichage des infos texte
     CTkLabel(popup, text=f"Produit: {product['nom']}", font=("Arial Bold", 16)).pack(pady=10)
@@ -420,8 +424,88 @@ def on_product_select(event):
             CTkLabel(popup, text="Image non disponible").pack(pady=10)
     else:
         CTkLabel(popup, text="Pas d'image disponible").pack(pady=10)
+    
+    # Conteneur pour les boutons d'action
+    action_frame = CTkFrame(popup, fg_color="transparent")
+    action_frame.pack(pady=10)
+
+    def show_entry_exit():
+        """Remplace les boutons par les options Entrée/Sortie."""
+        for widget in action_frame.winfo_children():
+            widget.destroy()
+        
+        entry_var = BooleanVar()
+        exit_var = BooleanVar()
+
+        grid_frame = CTkFrame(action_frame, fg_color="transparent")
+        grid_frame.pack()
+
+        CTkLabel(grid_frame, text="Entrée").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        CTkLabel(grid_frame, text="Sortie").grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        CTkLabel(grid_frame, text="Référence").grid(row=0, column=2, padx=5, pady=5)
+        CTkLabel(grid_frame, text="Quantité").grid(row=0, column=3, padx=5, pady=5)
+        
+        entry_checkbox = CTkCheckBox(grid_frame, variable=entry_var, text="")
+        exit_checkbox = CTkCheckBox(grid_frame, variable=exit_var, text="")
+        reference_entry = CTkEntry(grid_frame)
+        quantity_entry = CTkEntry(grid_frame)
+        
+        entry_checkbox.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+        exit_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        reference_entry.grid(row=1, column=2, padx=5, pady=5)
+        quantity_entry.grid(row=1, column=3, padx=5, pady=5)
+        
+        button_frame = CTkFrame(action_frame, fg_color="transparent")
+        button_frame.pack(pady=10)
+
+        confirm_button = CTkButton(button_frame, text="Confirmer", fg_color="black", command=lambda: confirm_entry_exit(entry_var.get(), exit_var.get(), reference_entry.get(), quantity_entry.get()))
+        confirm_button.grid(row=0, column=0, padx=10)
+        
+        back_button = CTkButton(button_frame, text="Retour", fg_color="black", command=lambda: reset_action_frame())
+        back_button.grid(row=0, column=1, padx=10)
+    
+    def reset_action_frame():
+        for widget in action_frame.winfo_children():
+            widget.destroy()
+        CTkButton(action_frame, text="Modifier", fg_color="black", command=lambda: print(f"Modifier {product['nom']}")) .pack(pady=5)
+        CTkButton(action_frame, text="Entrée/Sortie", fg_color="black", command=show_entry_exit).pack(pady=5)
+        CTkButton(action_frame, text="Fermer", fg_color="black", command=popup.destroy).pack(pady=10)
+
+    def confirm_entry_exit(entry, exit, reference, quantity):
+        """Action de confirmation pour l'entrée/sortie."""
+        if not reference or not quantity:
+            print("Référence et quantité requises.")
+            return
+        
+        try:
+            quantity_value = int(quantity)
+            if exit:
+                quantity_value = -abs(quantity_value)
+        except ValueError:
+            print("Quantité invalide. Veuillez entrer un nombre entier.")
+            return
+        
+        loading_label = CTkLabel(action_frame, text="Chargement...")
+        loading_label.pack(pady=5)
+        progress_bar = CTkProgressBar(action_frame, mode="determinate")
+        progress_bar.pack(pady=5)
+        progress_bar.start()
+        popup.update()
+        
+        action = "Ajouter" if entry else "Réduire" if exit else "Aucune sélection"
+        if action != "Aucune sélection":
+            try:
+                mov_prod(product["id"], action, reference, quantity_value, "username")
+                progress_bar.destroy()
+                loading_label.destroy()
+                reset_action_frame()
+            except Exception as e:
+                progress_bar.destroy()
+                loading_label.destroy()
+                print(f"Erreur: {e}")
+        else:
+            progress_bar.destroy()
+            loading_label.destroy()
 
     # Boutons d'action
-    CTkButton(popup, text="Modifier", command=lambda: print(f"Modifier {product['nom']}")).pack(pady=5)
-    CTkButton(popup, text="Supprimer", command=lambda: print(f"Supprimer {product['nom']}")).pack(pady=5)
-    CTkButton(popup, text="Fermer", command=popup.destroy).pack(pady=10)
+    reset_action_frame()
