@@ -4,7 +4,9 @@ from customtkinter import *
 from functools import partial
 from PIL import Image, ImageTk
 import requests
+import time
 from io import BytesIO
+from ctypes import windll
 from fonction import list_produit, plus_list_prod, moins_list_prod, crea_command, envoie_msg_command
 
 # Couleurs modernes
@@ -15,29 +17,75 @@ HIGHLIGHT_COLOR = "#2A8C55"
 
 # Dictionnaires pour suivre les produits scannés
 scanned_products = {}
+all_products = []
 CURRENT_PAGE = 0
 ITEMS_PER_PAGE = 23  # Nombre de produits par page
 pagination_frame = None  # Cadre pour les boutons de navigation
 supplier_var = None
 category_var = None
 
+windll.shcore.SetProcessDpiAwareness(1)
 
+def get_screen_scale():
+    root = Tk()
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    root.destroy()
+
+    # Vérification du facteur d'échelle DPI
+    if screen_width > 2500:  # Résolution > 2500px = écran haute résolution (Surface Pro)
+        return 1.20  # Facteur d'échelle 200%
+    else:
+        return 1  # Facteur d'échelle 100% (écran classique)
+
+def get_screen_scale_police():
+    root = Tk()
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    root.destroy()
+
+    # Vérification du facteur d'échelle DPI
+    if screen_width > 2500:  # Résolution > 2500px = écran haute résolution (Surface Pro)
+        return 1.1  # Facteur d'échelle 200%
+    else:
+        return 1  # Facteur d'échelle 100% (écran classique)
+
+SCALE_FACTOR = get_screen_scale()
+SCALE_FACTOR_POLICE = get_screen_scale_police()
 
 def show_all_products(main_view, username):
-    global table_frame, username_la, filter_supplier, filter_category, list_rea, tree, products_displayed, pagination_frame, supplier_var, category_var, supplier_filter, category_filter
+    global table_frame, username_la, filter_supplier, filter_category, list_rea, tree, products_displayed, pagination_frame, supplier_var, category_var, supplier_filter, category_filter, all_products
 
     username_la = username
+    all_products = list_produit()  # Charge une seule fois les produits
+    scanned_products = {p["id"]: p for p in all_products}
 
     # Effacer les widgets existants dans la vue principale
     for widget in main_view.winfo_children():
         widget.destroy()
 
+
+    # 📌 Ajout de la barre de chargement
+    loading_frame = CTkFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
+    loading_frame.pack(fill="x", padx=20, pady=10)
+    
+    loading_label = CTkLabel(loading_frame, text="Chargement des produits...", font=("Arial", 16))
+    loading_label.pack(pady=5)
+
+    progress_bar = CTkProgressBar(loading_frame)
+    progress_bar.pack(fill="x", padx=20, pady=5)
+    progress_bar.set(0)  # Initialiser la barre
+
+    main_view.update()  # Mise à jour de l'UI pour afficher la barre immédiatement
+
+    # 📌 Simuler le chargement progressif
+    for i in range(1, 101, 10):
+        progress_bar.set(i / 100)
+        main_view.update()
+        time.sleep(0.1)  # Petite pause pour montrer la progression
+
     # Récupérer la liste des produits
     produits = list_produit()
-
-    scanned_products.clear()
-    for p in produits:
-        scanned_products[p["id"]] = p
 
     list_rea = []
     for p in produits:
@@ -48,6 +96,10 @@ def show_all_products(main_view, username):
                 list_rea.append(p)
         except ValueError:
             print(f"Erreur de conversion pour le produit : {p}")
+
+
+    # Supprimer la barre de chargement après chargement
+    loading_frame.destroy()
 
     # Barre de recherche
     search_frame = CTkFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
@@ -126,6 +178,7 @@ def show_all_products(main_view, username):
 
     
     update_product_table()  # Mise à jour initiale des produits
+    filter_products()
 
 
 def filter_products():
@@ -169,19 +222,20 @@ def style_treeview():
         "Treeview",
         background="#F7F9FB",  # Couleur de fond
         foreground="#333333",  # Couleur du texte
-        rowheight=30,  # Hauteur des lignes
+        rowheight=int(30 * SCALE_FACTOR * SCALE_FACTOR * SCALE_FACTOR),  # Hauteur des lignes
         fieldbackground="#F7F9FB",  # Couleur de fond alternative
-        font=("Arial", 12)  # Police du texte
+        font=("Arial", int(12))  # Police du texte
     )
 
     # Style des en-têtes
     style.configure(
         "Treeview.Heading",
-        background="#ff0000",  # Fond rouge pour les en-têtes
-        foreground="black",     # Texte noir pour les en-têtes
-        activebackground="#ff6666",  # Fond au survol
-        activeforeground="white",   # Texte blanc au survol
-        font=("Arial Bold", 13),
+        background="#ff0000",
+        foreground="black",   
+        activebackground="#ff6666",
+        rowheight=int(30 * SCALE_FACTOR),
+        activeforeground="white",
+        font=("Arial", int(13 * SCALE_FACTOR)),
         borderwidth=1,
         relief="flat"
     )
@@ -196,7 +250,6 @@ def style_treeview():
 
 def create_product_table(table_frame):
     style_treeview()
-
     tree = ttk.Treeview(
         table_frame,
         columns=("Nom", "Fournisseur", "Catégorie", "Quantité"),
@@ -208,10 +261,10 @@ def create_product_table(table_frame):
     tree.heading("Catégorie", text="Catégorie", command=lambda: sort_by_column(tree, "Catégorie", False))
     tree.heading("Quantité", text="Quantité", command=lambda: sort_by_column(tree, "Quantité", False))
 
-    tree.column("Nom", width=200, anchor="center")
-    tree.column("Fournisseur", width=150, anchor="center")
-    tree.column("Catégorie", width=150, anchor="center")
-    tree.column("Quantité", width=100, anchor="center")
+    tree.column("Nom", width=int(200 * SCALE_FACTOR), anchor="center")
+    tree.column("Fournisseur", width=int(150 * SCALE_FACTOR), anchor="center")
+    tree.column("Catégorie", width=int(150 * SCALE_FACTOR), anchor="center")
+    tree.column("Quantité", width=int(100 * SCALE_FACTOR), anchor="center")
 
     tree.pack(fill="both", expand=True)
 
@@ -306,22 +359,18 @@ def afficher_rea():
 
 
 def sort_by_column(tree, col, reverse):
-    """Trie le Treeview selon la colonne sélectionnée."""
     items = [(tree.set(k, col), k) for k in tree.get_children('')]
-    
-    try:
-        # Essayer de trier comme des nombres
-        items.sort(key=lambda t: int(t[0]), reverse=reverse)
-    except ValueError:
-        # Trier comme du texte si ce n'est pas un nombre
-        items.sort(reverse=reverse)
 
-    # Réinsérer les éléments triés
+    try:
+        items.sort(key=lambda t: float(t[0]) if t[0].isdigit() else t[0].lower(), reverse=reverse)
+    except ValueError:
+        items.sort(key=lambda t: t[0].lower(), reverse=reverse)
+
     for index, (val, k) in enumerate(items):
         tree.move(k, '', index)
 
-    # Inverser l'ordre pour le prochain tri
     tree.heading(col, command=lambda: sort_by_column(tree, col, not reverse))
+
 
 
 
