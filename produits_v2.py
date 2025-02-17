@@ -93,7 +93,7 @@ def show_all_products(main_view, username):
         try:
             qte = int(p["qte"])
             mini = int(p["mini"])
-            if qte <= mini:
+            if qte < mini:
                 list_rea.append(p)
         except ValueError:
             print(f"Erreur de conversion pour le produit : {p}")
@@ -307,6 +307,14 @@ def update_product_table(page=0):
     # Mettre à jour les boutons de navigation
     update_pagination_controls()
 
+def update_product_quantity(product_id, new_quantity):
+    """Met à jour la quantité affichée pour un produit donné."""
+    for item in tree.get_children():
+        values = tree.item(item, "values")
+        if values[0] == scanned_products[product_id]["nom"]:
+            tree.item(item, values=(values[0], values[1], values[2], new_quantity))
+            scanned_products[product_id]["qte"] = new_quantity  # Mettre à jour le dictionnaire local
+            break
 
 
 def update_pagination_controls():
@@ -496,6 +504,11 @@ def on_product_select(event):
         if action != "Aucune sélection":
             try:
                 mov_prod(product["id"], action, reference, quantity_value, "username")
+
+                # Mise à jour de la quantité en local et dans le tableau
+                new_quantity = scanned_products[product["id"]]["qte"] + quantity_value
+                update_product_quantity(product["id"], new_quantity)
+
                 progress_bar.destroy()
                 loading_label.destroy()
                 reset_action_frame()
