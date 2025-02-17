@@ -55,7 +55,7 @@ SCALE_FACTOR = get_screen_scale()
 SCALE_FACTOR_POLICE = get_screen_scale_police()
 
 def show_all_products(main_view, username):
-    global table_frame, username_la, filter_supplier, filter_category, list_rea, tree, products_displayed, pagination_frame, supplier_var, category_var, supplier_filter, category_filter, all_products
+    global table_frame, username_la, filter_supplier, filter_category, list_rea, tree, products_displayed, pagination_frame, supplier_var, category_var, supplier_filter, category_filter, all_products, info_labels
 
     username_la = username
     all_products = list_produit()  # Charge une seule fois les produits
@@ -119,19 +119,29 @@ def show_all_products(main_view, username):
     info_frame = CTkFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
     info_frame.pack(fill="x", padx=20, pady=10)
 
-    info_labels = [
+    # Liste pour stocker les labels des bulles d'info
+    info_labels = []
+
+    # Création des bulles d'informations
+    info_labels_data = [
         ("Total Produits", len(produits)),
         ("Nombre Fournisseurs", len(set(p["fournisseur"] for p in produits))),
         ("Catégories", len(set(p["categorie"] for p in produits))),
         ("Produits à commander", len(list_rea)),
-        ("Articles en Rupture", sum(1 for p in produits if p["qte"] == 0))
+        ("Articles en Rupture", sum(1 for p in produits if int(p["qte"]) == 0))
     ]
 
-    for label, value in info_labels:
+    for label, value in info_labels_data:
         info_block = CTkFrame(info_frame, fg_color="#FFFFFF", corner_radius=10, width=120, height=80)
         info_block.pack(side="left", padx=10, pady=10, expand=True, fill="both")
-        CTkLabel(info_block, text=str(value), font=("Arial Bold", 25), text_color=HIGHLIGHT_COLOR).pack(pady=5)
+
+        value_label = CTkLabel(info_block, text=str(value), font=("Arial Bold", 25), text_color=HIGHLIGHT_COLOR)
+        value_label.pack(pady=5)
+
         CTkLabel(info_block, text=label, font=("Arial", 20), text_color=TEXT_COLOR).pack()
+
+        info_labels.append(value_label)  # Stocke les références des labels
+
 
     # Liste des fournisseurs uniques
     suppliers = sorted(set(p["fournisseur"] for p in scanned_products.values()))
@@ -253,19 +263,21 @@ def create_product_table(table_frame):
     style_treeview()
     tree = ttk.Treeview(
         table_frame,
-        columns=("Nom", "Fournisseur", "Catégorie", "Quantité"),
+        columns=("Nom", "Référence", "Fournisseur", "Catégorie", "Quantité"),
         show="headings",
         height=20,
     )
     tree.heading("Nom", text="Nom")
+    tree.heading("Référence", text="Référence")
     tree.heading("Fournisseur", text="Fournisseur", command=lambda: sort_by_column(tree, "Fournisseur", False))
     tree.heading("Catégorie", text="Catégorie", command=lambda: sort_by_column(tree, "Catégorie", False))
     tree.heading("Quantité", text="Quantité", command=lambda: sort_by_column(tree, "Quantité", False))
 
     tree.column("Nom", width=int(200 * SCALE_FACTOR), anchor="center")
-    tree.column("Fournisseur", width=int(150 * SCALE_FACTOR), anchor="center")
-    tree.column("Catégorie", width=int(150 * SCALE_FACTOR), anchor="center")
-    tree.column("Quantité", width=int(100 * SCALE_FACTOR), anchor="center")
+    tree.column("Référence", width=int(110 * SCALE_FACTOR), anchor="center")
+    tree.column("Fournisseur", width=int(110 * SCALE_FACTOR), anchor="center")
+    tree.column("Catégorie", width=int(110 * SCALE_FACTOR), anchor="center")
+    tree.column("Quantité", width=int(75 * SCALE_FACTOR), anchor="center")
 
     tree.pack(fill="both", expand=True)
 
@@ -295,7 +307,7 @@ def update_product_table(page=0):
         tree.insert(
             "",
             "end",
-            values=(product["nom"], product["fournisseur"], product["categorie"], product["qte"]),
+            values=(product["nom"], product["ref"], product["fournisseur"], product["categorie"], product["qte"]),
             tags=(row_color,)
         )
 
@@ -308,13 +320,58 @@ def update_product_table(page=0):
     update_pagination_controls()
 
 def update_product_quantity(product_id, new_quantity):
-    """Met à jour la quantité affichée pour un produit donné."""
+    """Met à jour la quantité affichée pour un produit et ajuste la couleur si nécessaire."""
+    global list_rea
+
     for item in tree.get_children():
         values = tree.item(item, "values")
         if values[0] == scanned_products[product_id]["nom"]:
-            tree.item(item, values=(values[0], values[1], values[2], new_quantity))
-            scanned_products[product_id]["qte"] = new_quantity  # Mettre à jour le dictionnaire local
+            # Mise à jour des données locales
+            scanned_products[product_id]["qte"] = new_quantity
+
+            # Vérifier si le produit doit être dans la liste des réapprovisionnements
+            mini_quantity = int(scanned_products[product_id]["mini"])
+            if new_quantity < mini_quantity and product_id not in [p["id"] for p in list_rea]:
+                list_rea.append(scanned_products[product_id])  # Ajouter à la liste de réapprovisionnement
+                tree.item(item, values=(values[0], values[1], values[2], values[3], new_quantity), tags=("red",))
+            else:
+                if product_id in [p["id"] for p in list_rea] and new_quantity >= mini_quantity:
+                    list_rea = [p for p in list_rea if p["id"] != product_id]  # Retirer de la liste
+                tree.item(item, values=(values[0], values[1], values[2], values[3], new_quantity), tags=("black",))
+
             break
+
+    # Mise à jour des couleurs et des bulles d'info
+    tree.tag_configure("red", foreground="red")
+    tree.tag_configure("black", foreground="black")
+    update_info_bubbles()  # 🔥 Ajout de cette ligne pour mettre à jour les bulles
+
+
+def update_info_bubbles():
+    """Met à jour les bulles d'information affichées au-dessus du tableau après chaque modification."""
+    global list_rea, info_labels
+
+    # 🔥 Rafraîchir la liste des produits à recommander avant de mettre à jour les bulles
+    refresh_list_rea()
+
+    total_products = len(scanned_products)
+    total_suppliers = len(set(p["fournisseur"] for p in scanned_products.values()))
+    total_categories = len(set(p["categorie"] for p in scanned_products.values()))
+    total_restock = len(list_rea)  # Nombre de produits à commander (maintenant toujours à jour)
+    total_out_of_stock = sum(1 for p in scanned_products.values() if int(p["qte"]) == 0)
+
+    # Vérifier que info_labels est bien initialisé
+    if len(info_labels) < 5:
+        print("Erreur: info_labels n'est pas bien initialisé")
+        return
+
+    # Mise à jour des bulles d'information
+    info_labels[0].configure(text=f"{total_products}")
+    info_labels[1].configure(text=f"{total_suppliers}")
+    info_labels[2].configure(text=f"{total_categories}")
+    info_labels[3].configure(text=f"{total_restock}")  # ✅ Mise à jour correcte du nombre de produits à commander
+    info_labels[4].configure(text=f"{total_out_of_stock}")
+
 
 
 def update_pagination_controls():
@@ -337,6 +394,10 @@ def update_pagination_controls():
     if CURRENT_PAGE < total_pages - 1:
         CTkButton(pagination_frame, text="Suivant", command=lambda: update_product_table(CURRENT_PAGE + 1)).pack(side="right", padx=10)
 
+def refresh_list_rea():
+    """Met à jour la liste des produits à commander en fonction des quantités actuelles."""
+    global list_rea
+    list_rea = [p for p in scanned_products.values() if int(p["qte"]) < int(p["mini"])]
 
 def search_product(query):
     """Recherche un produit."""
@@ -484,7 +545,7 @@ def on_product_select(event):
         if not reference or not quantity:
             print("Référence et quantité requises.")
             return
-        
+
         try:
             quantity_value = int(quantity)
             if exit:
@@ -492,20 +553,20 @@ def on_product_select(event):
         except ValueError:
             print("Quantité invalide. Veuillez entrer un nombre entier.")
             return
-        
+
         loading_label = CTkLabel(action_frame, text="Chargement...")
         loading_label.pack(pady=5)
         progress_bar = CTkProgressBar(action_frame, mode="determinate")
         progress_bar.pack(pady=5)
         progress_bar.start()
         popup.update()
-        
+
         action = "Ajouter" if entry else "Réduire" if exit else "Aucune sélection"
         if action != "Aucune sélection":
             try:
                 mov_prod(product["id"], action, reference, quantity_value, "username")
 
-                # Mise à jour de la quantité en local et dans le tableau
+                # Mettre à jour la quantité et ajuster la couleur
                 new_quantity = scanned_products[product["id"]]["qte"] + quantity_value
                 update_product_quantity(product["id"], new_quantity)
 
@@ -519,6 +580,7 @@ def on_product_select(event):
         else:
             progress_bar.destroy()
             loading_label.destroy()
+
 
     # Boutons d'action
     reset_action_frame()
