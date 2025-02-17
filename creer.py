@@ -91,7 +91,7 @@ def crea_prod(main_view):
 
     fournisseurs = ["AMAZON", "BERNER", "BIPA", "BRICOZOR", "BUBENDORFF", "COGEFERM", "COPRODEX", "EUROMATIK", "FORUM DU BATIMENT",
                         "FOUSSIER", "FRANCIAFLEX", "ILLBRUCK", "KLINE", "KLOSE BESSER", "LARIVIERE", "LEGRAND", "LEROY MERLIN", "MANO MANO",
-                        "PREFAL", "RABONI", "RECA", "SOMFY", "VALENTE", "VDS", "WURTH"]
+                        "PREFAL", "RABONI", "RECA", "SOMFY", "VALENTE", "SONEPAR", "WURTH"]
 
 
     category_label = CTkLabel(fields_frame, text="Catégorie", font=("Arial Bold", 17), text_color="white")
@@ -147,6 +147,16 @@ def crea_prod(main_view):
     max_entry = CTkEntry(quantity_frame, width=50, fg_color="white", text_color="black", corner_radius=8)
     max_entry.grid(row=0, column=6, padx=(0, 10))
 
+    # Menu déroulant pour le lieu
+    lieux = ["STOCK", "TENTE", "BUREAU", "CHAPITOT", "HORS STOCK"]
+
+    lieu_label = CTkLabel(quantity_frame, text="Lieu", font=("Arial Bold", 17), text_color="white")
+    lieu_label.grid(row=0, column=7, padx=(10, 5))
+
+    lieu_menu = CTkOptionMenu(quantity_frame, values=lieux, fg_color="white", text_color="black", corner_radius=8)
+    lieu_menu.grid(row=0, column=8, padx=(0, 10))
+
+
     price_label = CTkLabel(fields_frame, text="Prix", font=("Arial Bold", 17), text_color="white")
     price_label.grid(row=11, column=0, sticky="w", padx=20, pady=(10, 0))
 
@@ -164,6 +174,7 @@ def crea_prod(main_view):
         prix = price_entry.get()
         min_val = min_entry.get()
         max_val = max_entry.get()
+        lieu = lieu_menu.get()
 
         try:
             prix = float(prix)
@@ -173,7 +184,7 @@ def crea_prod(main_view):
             label_status.configure(text="Erreur : Vérifiez les valeurs", text_color="red")
             return
 
-        cree_prod(nom, ref, categorie, fournisseur, quantite, prix, min_val, max_val)
+        cree_prod(nom, ref, categorie, fournisseur, lieu, quantite, prix, min_val, max_val)
 
         label_status.configure(text=f"Produit {nom} créé", text_color="blue")
 
@@ -186,6 +197,7 @@ def crea_prod(main_view):
         price_entry.delete(0, tkinter.END)
         min_entry.delete(0, tkinter.END)
         max_entry.delete(0, tkinter.END)
+        lieu_menu.set(lieux[0])
 
 
     create_button = CTkButton(fields_frame, text="Créer", font=("Arial Bold", 17), command=handle_create, fg_color="green", text_color="white", corner_radius=10, height=40)
