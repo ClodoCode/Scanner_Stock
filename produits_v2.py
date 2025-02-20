@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from customtkinter import *
+from CTkMessagebox import CTkMessagebox
 from functools import partial
 from PIL import Image, ImageTk
 import requests
@@ -8,7 +9,7 @@ import time
 import threading
 from io import BytesIO
 from ctypes import windll
-from fonction import list_produit, crea_command, envoie_msg_command, mov_prod
+from fonction import list_produit, crea_command, envoie_msg_command, mov_prod, update_product
 
 # Couleurs modernes
 BG_COLOR = "#4b5e61"
@@ -115,6 +116,16 @@ def show_all_products(main_view, username):
 
     CTkButton(search_frame, text="Produits à commander", command=lambda: afficher_rea()).pack(side="left", padx=10)
 
+    # Ajout du séparateur "|"
+    CTkLabel(search_frame, text="|", font=("Arial", 16), text_color=TEXT_COLOR).pack(side="left", padx=5)
+
+    # Ajout des boutons de filtrage par lieu
+    CTkButton(search_frame, text="STOCK", command=lambda: filter_by_location("STOCK")).pack(side="left", padx=5)
+    CTkButton(search_frame, text="TENTE", command=lambda: filter_by_location("TENTE")).pack(side="left", padx=5)
+    CTkButton(search_frame, text="BUREAU", command=lambda: filter_by_location("BUREAU")).pack(side="left", padx=5)
+    CTkButton(search_frame, text="CHAPITOT", command=lambda: filter_by_location("CHAPITOT")).pack(side="left", padx=5)
+
+
     # Bloc d'informations générales
     info_frame = CTkFrame(main_view, fg_color=BG_COLOR, corner_radius=15)
     info_frame.pack(fill="x", padx=20, pady=10)
@@ -213,6 +224,13 @@ def filter_products():
     global scanned_products
     scanned_products = {p["id"]: p for p in produits}
     update_product_table()
+    
+def filter_by_location(location):
+    """Filtre les produits en fonction de leur lieu de stockage."""
+    global scanned_products
+    scanned_products = {p["id"]: p for p in all_products if p.get("lieu", "") == location}
+    update_product_table()
+
 
 def reset_filters():
     """Réinitialise les filtres et affiche tous les produits."""
@@ -369,7 +387,7 @@ def update_info_bubbles():
     info_labels[0].configure(text=f"{total_products}")
     info_labels[1].configure(text=f"{total_suppliers}")
     info_labels[2].configure(text=f"{total_categories}")
-    info_labels[3].configure(text=f"{total_restock}")  # ✅ Mise à jour correcte du nombre de produits à commander
+    info_labels[3].configure(text=f"{total_restock}")
     info_labels[4].configure(text=f"{total_out_of_stock}")
 
 
@@ -442,10 +460,6 @@ def sort_by_column(tree, col, reverse):
     tree.heading(col, command=lambda: sort_by_column(tree, col, not reverse))
 
 
-
-import time
-import threading
-
 def on_product_select(event):
     """Affiche une fenêtre contextuelle avec les détails du produit et sa photo."""
     selected_item = tree.selection()
@@ -454,96 +468,146 @@ def on_product_select(event):
 
     item = tree.item(selected_item)
     values = item["values"]
-    
     product_name = values[0]  # Nom du produit
-    
-    # Recherche du produit dans scanned_products (qui contient déjà la photo)
+
+    # Recherche du produit
     product = next((p for p in scanned_products.values() if p["nom"] == product_name), None)
     if not product:
         return
 
-    # Créer la fenêtre popup
+    # Création de la fenêtre popup
     popup = CTkToplevel()
     popup.title("Détails du produit")
     popup.geometry("550x500")
-    popup.resizable(False, False)  # Empêcher le redimensionnement
+    popup.resizable(False, False)
+    popup.protocol("WM_DELETE_WINDOW", lambda: popup.withdraw())  # Empêcher la fermeture accidentelle
 
-    # Affichage des infos texte
+    # Affichage des informations produit
     CTkLabel(popup, text=f"Produit: {product['nom']}", font=("Arial Bold", 16)).pack(pady=10)
     CTkLabel(popup, text=f"Quantité: {product['qte']}").pack()
-    
-    # Affichage de l'image (si disponible)
-    photo_url = product.get("photo")
-    if photo_url:
-        try:
-            response = requests.get(photo_url)
-            if response.status_code == 200:
-                img_data = BytesIO(response.content)
-                img = Image.open(img_data)
-                img = img.resize((150, 150))  # Redimensionner l’image
-                photo = ImageTk.PhotoImage(img)
 
-                label_img = Label(popup, image=photo, bg="white")
-                label_img.image = photo  # Éviter le garbage collection
-                label_img.pack(pady=10)
-            else:
-                CTkLabel(popup, text="Image non disponible").pack(pady=10)
-        except Exception as e:
-            print(f"Erreur lors du chargement de l'image: {e}")
-            CTkLabel(popup, text="Image non disponible").pack(pady=10)
+    # Chargement de l'image du produit
+    def load_product_image(photo_url):
+        if not photo_url or not photo_url.startswith("http"):
+            return None
+        try:
+            response = requests.get(photo_url, timeout=5)
+            response.raise_for_status()
+            img_data = BytesIO(response.content)
+            img = Image.open(img_data).resize((150, 150))
+            return ImageTk.PhotoImage(img)
+        except requests.RequestException as e:
+            print(f"Erreur de chargement de l'image: {e}")
+        return None
+
+    photo = load_product_image(product.get("photo"))
+    if photo:
+        label_img = Label(popup, image=photo, bg="white")
+        label_img.image = photo
+        label_img.pack(pady=10)
     else:
         CTkLabel(popup, text="Pas d'image disponible").pack(pady=10)
-    
-    # Conteneur pour les boutons d'action
+
+    # Gestion des actions utilisateur
     action_frame = CTkFrame(popup, fg_color="transparent")
     action_frame.pack(pady=10)
 
-    def show_entry_exit():
-        """Remplace les boutons par les options Entrée/Sortie."""
-        for widget in action_frame.winfo_children():
+    def modifier_produit():
+        """Affiche une interface permettant de modifier les informations du produit et de les enregistrer via Airtable."""
+        for widget in popup.winfo_children():
             widget.destroy()
-        
-        entry_var = BooleanVar()
-        exit_var = BooleanVar()
 
-        grid_frame = CTkFrame(action_frame, fg_color="transparent")
-        grid_frame.pack()
+        popup.title(f"Modifier {product['nom']}")
 
-        CTkLabel(grid_frame, text="Entrée").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        CTkLabel(grid_frame, text="Sortie").grid(row=0, column=1, padx=5, pady=5, sticky="w")
-        CTkLabel(grid_frame, text="Référence").grid(row=0, column=2, padx=5, pady=5)
-        CTkLabel(grid_frame, text="Quantité").grid(row=0, column=3, padx=5, pady=5)
-        
-        entry_checkbox = CTkCheckBox(grid_frame, variable=entry_var, text="")
-        exit_checkbox = CTkCheckBox(grid_frame, variable=exit_var, text="")
-        reference_entry = CTkEntry(grid_frame)
-        quantity_entry = CTkEntry(grid_frame)
-        
-        entry_checkbox.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
-        exit_checkbox.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
-        reference_entry.grid(row=1, column=2, padx=5, pady=5)
-        quantity_entry.grid(row=1, column=3, padx=5, pady=5)
-        
-        button_frame = CTkFrame(action_frame, fg_color="transparent")
-        button_frame.pack(pady=10)
+        categories = ["BUSE", "CALE", "CHEVILLE", "CLIENT", "COFFRET", "CONSOMMABLE", "DISQUE", "ELECTRICITE", "EMBOUT", "ENTREE D AIR",
+                    "FÊNETRE", "FORET", "HABILLAGE", "LAMES", "MACHINE", "MOUSSE PU", "NETTOYAGE", "PROTECTION", "NON STOCKÉ", "OUTILLAGE A MAIN", 
+                    "POIGNÉE", "SCELLEMENT CHIMIQUE", "SCOTCH", "SECURITE", "SILICONE", "SPÉCIAL", "TELECOMMANDE", "VÉHICULES", "VETEMENT", "VISSERIE", "VMC", 
+                    "VOLET BATTANT", "VOLET ROULANT", "MOTEUR"]
 
-        confirm_button = CTkButton(button_frame, text="Confirmer", fg_color="black", command=lambda: confirm_entry_exit(entry_var.get(), exit_var.get(), reference_entry.get(), quantity_entry.get()))
-        confirm_button.grid(row=0, column=0, padx=10)
-        
-        back_button = CTkButton(button_frame, text="Retour", fg_color="black", command=lambda: reset_action_frame())
-        back_button.grid(row=0, column=1, padx=10)
-    
-    def reset_action_frame():
-        for widget in action_frame.winfo_children():
-            widget.destroy()
-        CTkButton(action_frame, text="Modifier", fg_color="black", command=lambda: print(f"Modifier {product['nom']}")) .pack(pady=5)
-        CTkButton(action_frame, text="Entrée/Sortie", fg_color="black", command=show_entry_exit).pack(pady=5)
-        CTkButton(action_frame, text="Fermer", fg_color="black", command=popup.destroy).pack(pady=10)
+        fournisseurs = ["AMAZON", "BERNER", "BIPA", "BRICOZOR", "BUBENDORFF", "COGEFERM", "COPRODEX", "EUROMATIK", "FORUM DU BATIMENT",
+                            "FOUSSIER", "FRANCIAFLEX", "ILLBRUCK", "KLINE", "KLOSE BESSER", "LARIVIERE", "LEGRAND", "LEROY MERLIN", "MANO MANO",
+                            "PREFAL", "RABONI", "RECA", "SOMFY", "VALENTE", "SONEPAR", "WURTH"]
+
+        CTkLabel(popup, text="Modifier le produit", font=("Arial Bold", 16)).pack(pady=10)
+
+        # Champs de saisie
+        fields = {
+            "Nom": product["nom"],
+            "Référence": product["ref"],
+            "Fournisseur": product["fournisseur"],
+            "Catégorie": product["categorie"],
+            "Minimum": str(product["mini"]),
+            "Maximum": str(product["max"]),
+            "Prix": str(product["prix"]) if "prix" in product else "",
+        }
+
+        entries = {}
+
+        for label, value in fields.items():
+            frame = CTkFrame(popup, fg_color="transparent")
+            frame.pack(fill="x", padx=20, pady=5)
+
+            CTkLabel(frame, text=label + ":", width=15).pack(side="left", padx=10)
+
+            # Utilisation d'une liste déroulante pour Catégorie et Fournisseur
+            if label == "Catégorie":
+                entry = CTkComboBox(frame, values=categories)
+                entry.set(value)  # Définir la valeur actuelle
+            elif label == "Fournisseur":
+                entry = CTkComboBox(frame, values=fournisseurs)
+                entry.set(value)  # Définir la valeur actuelle
+            else:
+                entry = CTkEntry(frame)
+                entry.insert(0, value)
+
+            entry.pack(side="right", fill="x", expand=True)
+            entries[label] = entry
+
+        # Bouton de sauvegarde
+        def sauvegarder_modifications():
+            """Enregistre les modifications du produit via l'API Airtable."""
+            try:
+                updated_data = {
+                    "Nom": entries["Nom"].get(),
+                    "Référence": entries["Référence"].get(),
+                    "Catégorie": entries["Catégorie"].get(),
+                    "Fournisseur": entries["Fournisseur"].get(),
+                    "Minimum": int(entries["Minimum"].get()),
+                    "Maximum": int(entries["Maximum"].get()),
+                    "Prix Unitaire": float(entries["Prix"].get()) if entries["Prix"].get() else None,
+                }
+
+                # Appel de la fonction pour mettre à jour dans Airtable
+                sucess = update_product(product["id"], updated_data)
+                reset_filters()
+                if sucess is not None:
+                    print("✅ Requête envoyée avec succès !")
+
+                    # Mise à jour locale
+                    if product["id"] in scanned_products:
+                        scanned_products[product["id"]].update(updated_data)
+
+                    CTkMessagebox(title="Succès", message="Modifications enregistrées.", icon="info")
+                    popup.withdraw()
+                else:
+                    print("❌ Mise à jour échouée, annulation de la mise à jour locale.")
+                    CTkMessagebox(title="Erreur", message="Échec de la mise à jour dans Airtable.", icon="warning")
+
+            except ValueError as e:
+                print(f"❌ Erreur de conversion : {e}")
+                CTkMessagebox(title="Erreur", message="Veuillez entrer des valeurs valides.", icon="warning")
+
+            except Exception as e:
+                print(f"❌ Erreur inattendue : {e}")
+                CTkMessagebox(title="Erreur", message=f"Échec de la mise à jour : {e}", icon="warning")
+
+        CTkButton(popup, text="Sauvegarder", fg_color="green", command=sauvegarder_modifications).pack(pady=10)
+        CTkButton(popup, text="Annuler", fg_color="red", command=popup.withdraw).pack()
 
     def confirm_entry_exit(entry, exit, reference, quantity):
         """Action de confirmation pour l'entrée/sortie."""
         if not reference or not quantity:
-            print("Référence et quantité requises.")
+            CTkMessagebox(title="Erreur", message="Référence et quantité requises.", icon="warning")
             return
 
         try:
@@ -551,8 +615,10 @@ def on_product_select(event):
             if exit:
                 quantity_value = -abs(quantity_value)
         except ValueError:
-            print("Quantité invalide. Veuillez entrer un nombre entier.")
+            CTkMessagebox(title="Erreur", message="Quantité invalide. Veuillez entrer un nombre entier.", icon="error")
             return
+
+        print(f"Traitement de l'action: {'Entrée' if entry else 'Sortie'} - Réf: {reference}, Qté: {quantity_value}")
 
         loading_label = CTkLabel(action_frame, text="Chargement...")
         loading_label.pack(pady=5)
@@ -565,22 +631,62 @@ def on_product_select(event):
         if action != "Aucune sélection":
             try:
                 mov_prod(product["id"], action, reference, quantity_value, "username")
-
-                # Mettre à jour la quantité et ajuster la couleur
                 new_quantity = scanned_products[product["id"]]["qte"] + quantity_value
                 update_product_quantity(product["id"], new_quantity)
-
+                CTkMessagebox(title="Succès", message="Mise à jour réussie!", icon="info")
                 progress_bar.destroy()
                 loading_label.destroy()
                 reset_action_frame()
             except Exception as e:
                 progress_bar.destroy()
                 loading_label.destroy()
-                print(f"Erreur: {e}")
+                CTkMessagebox(title="Erreur", message=f"Erreur: {e}", icon="error")
         else:
             progress_bar.destroy()
             loading_label.destroy()
 
+    def show_entry_exit():
+        for widget in action_frame.winfo_children():
+            widget.destroy()
 
-    # Boutons d'action
+        entry_var, exit_var = BooleanVar(), BooleanVar()
+        grid_frame = CTkFrame(action_frame, fg_color="transparent")
+        grid_frame.pack()
+
+        labels = ["Entrée", "Sortie", "Référence", "Quantité"]
+        for idx, text in enumerate(labels):
+            CTkLabel(grid_frame, text=text).grid(row=0, column=idx, padx=5, pady=5)
+
+        widgets = [
+            CTkCheckBox(grid_frame, variable=entry_var, text=""),
+            CTkCheckBox(grid_frame, variable=exit_var, text=""),
+            CTkEntry(grid_frame),
+            CTkEntry(grid_frame)
+        ]
+
+        for idx, widget in enumerate(widgets):
+            widget.grid(row=1, column=idx, padx=5, pady=5)
+
+        button_frame = CTkFrame(action_frame, fg_color="transparent")
+        button_frame.pack(pady=10)
+
+        CTkButton(button_frame, text="Confirmer", fg_color="black",
+                  command=lambda: confirm_entry_exit(
+                      entry_var.get(), exit_var.get(), widgets[2].get(), widgets[3].get()
+                  )).grid(row=0, column=0, padx=10)
+        CTkButton(button_frame, text="Retour", fg_color="black", command=reset_action_frame).grid(row=0, column=1, padx=10)
+
+    def reset_action_frame():
+        for widget in action_frame.winfo_children():
+            widget.destroy()
+
+        buttons = [
+            ("Modifier", modifier_produit),
+            ("Entrée/Sortie", show_entry_exit),
+            ("Fermer", popup.withdraw)
+        ]
+
+        for text, cmd in buttons:
+            CTkButton(action_frame, text=text, fg_color="black", command=cmd).pack(pady=5)
+
     reset_action_frame()

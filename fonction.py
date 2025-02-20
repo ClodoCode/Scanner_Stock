@@ -266,6 +266,7 @@ def list_produit():
                     "fournisseur": fields.get("Fournisseur", "Fournisseur inconnu"),
                     "qte": fields.get("Qté Stock (Réel)", "Qte inconnue"),
                     "id": fields.get("TheId", "ID inconnue"),
+                    "prix": fields.get("Prix Unitaire", "Pas de prix"),
                     "lieu": fields.get("Lieu", "Lieu inconnue"),
                     "mini": fields.get("Minimum", "Pas de minimum"),
                     "max": fields.get("Maximum", "Pas de maximum"),
@@ -316,6 +317,9 @@ def list_command():
     else:
         print(f"Erreur {response.status_code} : {response.text}")
         return None
+
+
+
 
 def crea_command(produit_id, qte_cde, username):
     """Ajoute un enregistrement dans la table gestion."""
@@ -369,6 +373,28 @@ def cree_prod(nom, ref, categorie, fourn, lieu, qte, prix, mini, max):
     else:
         print(f"Erreur {response.status_code} lors de la création du produit : {response.text}")
         return False
+
+def update_product(produit_id, updated_data):
+    """Met à jour un produit dans Airtable avec gestion des erreurs."""
+
+    url = f"{BASE_URL}/{produit_id}"
+    data = {"fields": updated_data}
+
+    try:
+        response = requests.patch(url, json=data, headers=HEADERS)
+        response_data = response.json()
+
+        if response.status_code == 200:
+            print(f"✅ Mise à jour réussie pour {produit_id}")
+            return response_data  # ✅ Retourne les données mises à jour
+        else:
+            print(f"❌ Erreur lors de la mise à jour d'Airtable : {response.status_code} - {response.text}")
+            return None  # ❌ Retourne None en cas d'échec
+
+    except requests.RequestException as e:
+        print(f"❌ Erreur réseau : {e}")
+        return None  # ❌ Retourne None en cas d'erreur réseau
+
 
 def confirm_command(id_command, qte):
     
@@ -435,11 +461,6 @@ def envoie_msg_command(message):
     except SlackApiError as e:
         print(f"Erreur lors de l'envoi du message: {e.response['error']}")
 
-
-
-
-
-# Fonction pour charger les utilisateurs depuis un fichier JSON
 def load_users_from_json(file_path):
     """Charge les utilisateurs à partir d'un fichier JSON."""
     try:
