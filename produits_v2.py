@@ -120,10 +120,15 @@ def show_all_products(main_view, username):
     CTkLabel(search_frame, text="|", font=("Arial", 16), text_color=TEXT_COLOR).pack(side="left", padx=5)
 
     # Ajout des boutons de filtrage par lieu
-    CTkButton(search_frame, text="STOCK", command=lambda: filter_by_location("STOCK")).pack(side="left", padx=5)
-    CTkButton(search_frame, text="TENTE", command=lambda: filter_by_location("TENTE")).pack(side="left", padx=5)
-    CTkButton(search_frame, text="BUREAU", command=lambda: filter_by_location("BUREAU")).pack(side="left", padx=5)
-    CTkButton(search_frame, text="CHAPITOT", command=lambda: filter_by_location("CHAPITOT")).pack(side="left", padx=5)
+    CTkButton(search_frame, text="STOCK", command=lambda: filter_by_location("STOCK"))\
+        .pack(side="left", padx=5, fill="x", expand=True)
+    CTkButton(search_frame, text="TENTE", command=lambda: filter_by_location("TENTE"))\
+        .pack(side="left", padx=5, fill="x", expand=True)
+    CTkButton(search_frame, text="BUREAU", command=lambda: filter_by_location("BUREAU"))\
+        .pack(side="left", padx=5, fill="x", expand=True)
+    CTkButton(search_frame, text="CHAPITOT", command=lambda: filter_by_location("CHAPITOT"))\
+        .pack(side="left", padx=5, fill="x", expand=True)
+
 
 
     # Bloc d'informations générales
@@ -459,7 +464,6 @@ def sort_by_column(tree, col, reverse):
 
     tree.heading(col, command=lambda: sort_by_column(tree, col, not reverse))
 
-
 def on_product_select(event):
     """Affiche une fenêtre contextuelle avec les détails du produit et sa photo."""
     selected_item = tree.selection()
@@ -480,7 +484,6 @@ def on_product_select(event):
     popup.title("Détails du produit")
     popup.geometry("550x500")
     popup.resizable(False, False)
-    popup.protocol("WM_DELETE_WINDOW", lambda: popup.withdraw())  # Empêcher la fermeture accidentelle
 
     # Affichage des informations produit
     CTkLabel(popup, text=f"Produit: {product['nom']}", font=("Arial Bold", 16)).pack(pady=10)
@@ -683,10 +686,21 @@ def on_product_select(event):
         buttons = [
             ("Modifier", modifier_produit),
             ("Entrée/Sortie", show_entry_exit),
-            ("Fermer", popup.withdraw)
+            ("Fermer", close_popup)
         ]
 
         for text, cmd in buttons:
             CTkButton(action_frame, text=text, fg_color="black", command=cmd).pack(pady=5)
 
+
+    def close_popup():
+        popup.grab_release()
+        popup.destroy()
+        
+    popup.protocol("WM_DELETE_WINDOW", close_popup)
+
     reset_action_frame()
+
+    popup.grab_set()
+    popup.wait_window() 
+
